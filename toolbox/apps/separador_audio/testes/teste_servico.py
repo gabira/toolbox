@@ -35,6 +35,16 @@ def teste_caminho_livre_nao_sobrescreve(tmp_path):
     assert servico.caminho_livre(tmp_path, "aula", "m4a").name == "aula (3).m4a"
 
 
+def teste_limpar_nome():
+    assert servico.limpar_nome('  Aula: parte 1/2?  ') == "Aula parte 12"
+    assert servico.limpar_nome("musica.m4a", "m4a") == "musica"
+    assert servico.limpar_nome("musica.mp3", "m4a") == "musica.mp3"
+    assert servico.limpar_nome("final...") == "final"
+    assert servico.limpar_nome("con") == "con_"
+    assert servico.limpar_nome('<>:"') == ""
+    assert servico.limpar_nome(None) == ""
+
+
 def teste_descricoes_para_a_tela():
     faixa = FaixaAudio("aac", 44100, "stereo", 128)
     assert servico.detalhes_faixa(faixa) == ["44,1 kHz", "estéreo", "128 kb/s"]
@@ -77,6 +87,13 @@ def teste_extrai_convertendo_para_mp3(video, tmp_path):
     saida = servico.extrair(video, tmp_path, "mp3")
     assert saida.suffix == ".mp3"
     assert sondar(saida).faixas_audio[0].codec == "mp3"
+
+
+def teste_extrai_com_nome_escolhido(video, tmp_path):
+    saida = servico.extrair(video, tmp_path, "original", nome="Minha música")
+    assert saida == tmp_path / "Minha música.m4a"
+    # Nome vazio volta para o nome do vídeo
+    assert servico.extrair(video, tmp_path, "original", nome="  ").name == "entrada.m4a"
 
 
 def teste_cancelar_remove_arquivo_parcial(video, tmp_path):

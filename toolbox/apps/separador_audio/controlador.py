@@ -25,6 +25,9 @@ class Controlador(QObject):
         if self._formato not in servico.FORMATOS:
             self._formato = "original"
         self._analise = {"estado": "vazio"}
+        self._arquivo = ""
+        self._nome = ""            # nome de saída (sem extensão) mostrado no campo
+        self._codec = ""
         self._tarefa_analise = None
         self._tarefa_extracao = None
         self._estado = "pronto"  # pronto | extraindo | concluido | erro
@@ -58,6 +61,29 @@ class Controlador(QObject):
         return QUrl.fromLocalFile(self._pasta).toString()
 
     @Property(str, notify=alterado)
+    def nomeSaida(self) -> str:
+        return self._nome
+
+    @Property(str, notify=alterado)
+    def nomePadrao(self) -> str:
+        return Path(self._arquivo).stem if self._arquivo else ""
+
+    @Property(str, notify=alterado)
+    def extensaoSaida(self) -> str:
+        if not self._codec:
+            return ""
+        return servico.extensao_saida(servico.FORMATOS[self._formato], self._codec)
+
+    @Property(str, notify=alterado)
+    def previsaoSaida(self) -> str:
+        """Nome final do arquivo, já com extensão e numeração se o nome existir."""
+        extensao = self.extensaoSaida
+        if not extensao or not Path(self._pasta).is_dir():
+            return ""
+        base = servico.limpar_nome(self._nome, extensao) or self.nomePadrao
+        return servico.caminho_livre(Path(self._pasta), base, extensao).name
+
+    @Property(str, notify=alterado)
     def estado(self) -> str:
         return self._estado
 
@@ -76,6 +102,11 @@ class Controlador(QObject):
         self._tarefa_analise = None
         if self._estado in ("concluido", "erro"):
             self._estado, self._mensagem = "pronto", ""
+        if caminho != self._arquivo:
+            # Vídeo novo: o campo de nome começa com o nome dele.
+            self._arquivo = caminho
+            self._nome = Path(caminho).stem if caminho else ""
+        self._codec = ""
 
         if not caminho:
             self._analise = {"estado": "vazio"}
@@ -99,6 +130,7 @@ class Controlador(QObject):
             self._analise = {"estado": "erro", "mensagem": "Este vídeo não tem trilha de áudio."}
         else:
             faixa = info.faixas_audio[0]
+            self._codec = faixa.codec
             self._analise = {
                 "estado": "ok",
                 "codec": servico.nome_codec(faixa.codec),
@@ -127,6 +159,12 @@ class Controlador(QObject):
             self.alterado.emit()
 
     @Slot(str)
+    def definirNome(self, nome: str) -> None:
+        if nome != self._nome:
+            self._nome = nome
+            self.alterado.emit()
+
+    @Slot(str)
     def definirPasta(self, url: str) -> None:
         pasta = QUrl(url).toLocalFile() or url
         if pasta and Path(pasta).is_dir():
@@ -141,9 +179,10 @@ class Controlador(QObject):
         if self._estado == "extraindo" or self._analise.get("estado") != "ok":
             return
         self._estado, self._progresso, self._mensagem, self._saida = "extraindo", 0.0, "", ""
-        pasta, formato = self._pasta, self._formato
+        pasta, formato, nome = self._pasta, self._formato, self._nome
         tarefa = Tarefa(
-            lambda ao_progresso, cancelado: servico.extrair(caminho, pasta, formato, ao_progresso, cancelado),
+            lambda ao_progresso, cancelado: servico.extrair(
+                caminho, pasta, formato, ao_progresso, cancelado, nome=nome),
             self,
         )
         tarefa.progresso.connect(self._aoProgredir)
