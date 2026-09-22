@@ -1,0 +1,15 @@
+# Ambiente Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Empacotamento (só quando pedido)
+build/
+dist/
+*.spec
+
+# Editor / SO
+.vscode/
+.idea/
+Thumbs.db
