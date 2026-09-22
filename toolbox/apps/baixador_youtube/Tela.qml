@@ -420,7 +420,7 @@ Item {
                             // O vídeo baixado vira o arquivo da TOOLBOX (ex.: para separar o áudio).
                             visible: tela.c.arquivoBaixado !== ""
                             texto: "Usar na TOOLBOX"
-                            icone: "cubo"
+                            iconeFonte: Tema.imagem("logo_simbolo")
                             cor: Tema.destaque
                             onClicado: nucleo.definirArquivo(tela.c.arquivoBaixado)
                         }

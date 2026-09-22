@@ -2,6 +2,17 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.5.0] - 2026-09-22
+### Adicionado
+- Identidade visual com o logo oficial em `toolbox/ui/imagens/` (completo, só símbolo, só texto).
+- Abertura animada: o logo completo aparece e dá lugar ao hub (clique para pular).
+- Círculo central com o símbolo "T" e a palavra "TOOLBOX" do logo; o "T" vira o ícone do canto no app aberto.
+- Ícone `toolbox.ico` (16 a 256 px) na janela e na barra de tarefas.
+- `criar-atalho.bat`: cria o atalho "TOOLBOX" na Área de Trabalho com o ícone.
+
+### Removido
+- Ícone provisório do cubo.
+
 ## [0.4.0] - 2026-09-22
 ### Adicionado
 - App **Baixar do YouTube** (portado do projeto download_yt), sempre disponível no hub por usar link:

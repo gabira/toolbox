@@ -5,7 +5,8 @@ Rectangle {
     id: botao
 
     property string texto: ""
-    property string icone: ""
+    property string icone: ""       // nome de um ícone da UI (ui/icones)
+    property url iconeFonte: ""     // ou uma imagem qualquer (ex.: o logo)
     property color cor: Tema.destaque
     property bool primario: false
     property bool habilitado: true
@@ -37,7 +38,8 @@ Rectangle {
 
         Icone {
             nome: botao.icone
-            visible: botao.icone !== ""
+            fonte: botao.iconeFonte
+            visible: botao.icone !== "" || botao.iconeFonte.toString() !== ""
             width: 18
             height: 18
             resolucao: 36
