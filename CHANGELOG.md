@@ -2,6 +2,19 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.6.0] - 2026-09-22
+### Adicionado
+- Entrada híbrida no centro: aceita arquivo **ou** link. Cole/digite um link do YouTube na pílula
+  (analisa sozinho ao colar) ou use Ctrl+V em qualquer lugar do hub — funciona também com arquivo
+  copiado no Explorer. Arrastar um link do navegador também vale.
+- Aviso "Link copiado": ao copiar um link do YouTube, a TOOLBOX oferece usá-lo ("Usar link" / "Agora não").
+- Links têm tipo como os arquivos (`link/youtube`); com um link, só os apps que o aceitam aparecem.
+- O Baixar do YouTube recebe o link do centro e já analisa; vários links abrem a aba "Vários vídeos" preenchida.
+- Link ou texto não reconhecido: a pílula treme e mostra o motivo.
+
+### Alterado
+- Sinal `nucleo.arquivoAlterado` → `nucleo.entradaAlterada`; `limparArquivo` → `limparEntrada`.
+
 ## [0.5.0] - 2026-09-22
 ### Adicionado
 - Identidade visual com o logo oficial em `toolbox/ui/imagens/` (completo, só símbolo, só texto).

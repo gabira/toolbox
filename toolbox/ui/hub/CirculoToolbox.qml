@@ -9,11 +9,15 @@ Item {
 
     property real k: 0
     property bool destacado: false      // arquivo sendo arrastado por cima
-    property bool analisando: false     // detectando o tipo do arquivo
-    property string nomeArquivo: ""
+    property bool analisando: false     // detectando o tipo da entrada
+    property string tipoEntrada: ""     // "", "arquivo" ou "link"
+    property string nomeEntrada: ""
     property string resumo: ""
+    readonly property bool editando: campo.activeFocus
+    readonly property bool temEntrada: tipoEntrada !== ""
     signal escolherArquivo()
-    signal limparArquivo()
+    signal enviarTexto(string texto)
+    signal limpar()
     signal voltar()
 
     readonly property real d: width
@@ -21,6 +25,27 @@ Item {
     readonly property bool compacto: k > 0.99
 
     function lerp(a, b, t) { return a + (b - a) * t }
+
+    // Mensagem curta em vermelho abaixo da entrada (ex.: link não reconhecido)
+    property string erro: ""
+    function mostrarErro(mensagem) {
+        erro = mensagem
+        timerErro.restart()
+    }
+    Timer { id: timerErro; interval: 3200; onTriggered: circulo.erro = "" }
+
+    function enviarCampo() {
+        const texto = campo.text.trim()
+        timerEnvio.stop()
+        if (texto === "")
+            return
+        campo.text = ""
+        campo.focus = false
+        circulo.enviarTexto(texto)
+    }
+
+    // Colou/digitou algo com cara de link: envia sozinho, sem precisar de Enter.
+    Timer { id: timerEnvio; interval: 450; onTriggered: circulo.enviarCampo() }
 
     scale: compacto && areaCirculo.containsMouse ? 1.1 : (destacado ? 1.04 : 1)
     Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutBack } }
@@ -177,7 +202,7 @@ Item {
         visible: opacity > 0
     }
 
-    // Entrada de arquivo compartilhada
+    // Entrada híbrida compartilhada: arquivo (ícone de pasta / arrastar) ou link (colar/digitar)
     Rectangle {
         id: entrada
         width: circulo.d * 0.76
@@ -187,35 +212,96 @@ Item {
         radius: height / 2
         opacity: circulo.opacidadeConteudo
         visible: opacity > 0
-        color: areaCirculo.containsMouse ? "#12214F" : "#0A1334"
-        border.width: 1.5
-        border.color: circulo.nomeArquivo !== "" ? Tema.ciano : Tema.comAlfa(Tema.destaqueClaro, 0.45)
+        color: circulo.editando ? "#0E1B45" : (areaCirculo.containsMouse ? "#12214F" : "#0A1334")
+        border.width: circulo.editando ? 2 : 1.5
+        border.color: circulo.erro !== "" ? Tema.erro
+                      : (circulo.editando || circulo.temEntrada ? Tema.ciano : Tema.comAlfa(Tema.destaqueClaro, 0.45))
 
         Behavior on color { ColorAnimation { duration: Tema.rapida } }
+        Behavior on border.color { ColorAnimation { duration: Tema.rapida } }
 
-        Icone {
-            id: iconePasta
-            nome: "pasta"
-            resolucao: 48
-            width: entrada.height * 0.42
-            height: width
-            x: entrada.height * 0.38
-            anchors.verticalCenter: parent.verticalCenter
+        // Tremida quando o texto não é reconhecido
+        transform: Translate { id: deslocamento }
+        SequentialAnimation {
+            id: tremida
+            NumberAnimation { target: deslocamento; property: "x"; to: -8; duration: 50 }
+            NumberAnimation { target: deslocamento; property: "x"; to: 8; duration: 70 }
+            NumberAnimation { target: deslocamento; property: "x"; to: -5; duration: 60 }
+            NumberAnimation { target: deslocamento; property: "x"; to: 0; duration: 50 }
+        }
+        Connections {
+            target: circulo
+            function onErroChanged() { if (circulo.erro !== "") tremida.restart() }
         }
 
-        Text {
+        // Ícone da esquerda: abre o seletor de arquivos
+        Item {
+            id: iconeEntrada
+            width: entrada.height * 0.9
+            height: entrada.height
+            x: entrada.height * 0.14
+
+            Icone {
+                anchors.centerIn: parent
+                nome: circulo.tipoEntrada === "link" && !circulo.editando ? "link" : "pasta"
+                resolucao: 48
+                width: entrada.height * 0.42
+                height: width
+                opacity: areaPasta.containsMouse ? 1 : 0.85
+            }
+            MouseArea {
+                id: areaPasta
+                anchors.fill: parent
+                hoverEnabled: true
+                enabled: circulo.k === 0 && !circulo.analisando
+                cursorShape: Qt.PointingHandCursor
+                onClicked: circulo.escolherArquivo()
+            }
+        }
+
+        TextInput {
+            id: campo
             anchors {
-                left: iconePasta.right; leftMargin: entrada.height * 0.25
+                left: iconeEntrada.right; leftMargin: entrada.height * 0.05
                 right: botaoAcao.left; rightMargin: entrada.height * 0.2
                 verticalCenter: parent.verticalCenter
             }
-            text: circulo.analisando ? "Analisando arquivo" + ".".repeat(circulo.pontos)
-                                     : (circulo.nomeArquivo !== "" ? circulo.nomeArquivo : "Selecionar arquivo")
-            elide: Text.ElideMiddle
-            color: circulo.analisando ? "#A5F3FC" : (circulo.nomeArquivo !== "" ? Tema.texto : Tema.textoSuave)
+            enabled: circulo.k === 0 && !circulo.analisando
+            clip: true
+            selectByMouse: true
+            color: Tema.texto
+            selectionColor: Tema.comAlfa(Tema.ciano, 0.5)
             font.family: Tema.fonte
             font.pixelSize: Math.max(1, entrada.height * 0.3)
             font.weight: Font.DemiBold
+            onAccepted: circulo.enviarCampo()
+            onTextEdited: {
+                if (/https?:\/\/|youtu\.?be/i.test(text))
+                    timerEnvio.restart()
+            }
+            Keys.onEscapePressed: {
+                text = ""
+                focus = false
+            }
+
+            // Texto de apoio / nome da entrada atual (some quando o usuário digita)
+            Text {
+                anchors.fill: parent
+                verticalAlignment: Text.AlignVCenter
+                visible: campo.text === ""
+                elide: Text.ElideMiddle
+                font: campo.font
+                text: {
+                    if (circulo.analisando)
+                        return (circulo.tipoEntrada === "link" ? "Analisando link" : "Analisando arquivo")
+                               + ".".repeat(circulo.pontos)
+                    if (circulo.editando)
+                        return "Cole um link do YouTube…"
+                    return circulo.temEntrada ? circulo.nomeEntrada : "Arquivo ou link"
+                }
+                color: circulo.analisando ? "#A5F3FC"
+                       : (circulo.temEntrada && !circulo.editando ? Tema.texto : Tema.textoSuave)
+            }
         }
 
         Rectangle {
@@ -232,9 +318,12 @@ Item {
 
             Behavior on color { ColorAnimation { duration: Tema.rapida } }
 
+            // Com texto digitado: enviar. Com entrada: limpar. Vazio: escolher arquivo.
+            readonly property string acao: campo.text !== "" ? "enviar" : (circulo.temEntrada ? "limpar" : "escolher")
+
             Icone {
                 anchors.centerIn: parent
-                nome: circulo.nomeArquivo !== "" ? "fechar" : "seta"
+                nome: botaoAcao.acao === "limpar" ? "fechar" : "seta"
                 resolucao: 40
                 width: parent.width * 0.5
                 height: width
@@ -246,7 +335,11 @@ Item {
                 hoverEnabled: true
                 enabled: circulo.k === 0 && !circulo.analisando
                 cursorShape: Qt.PointingHandCursor
-                onClicked: circulo.nomeArquivo !== "" ? circulo.limparArquivo() : circulo.escolherArquivo()
+                onClicked: {
+                    if (botaoAcao.acao === "enviar") circulo.enviarCampo()
+                    else if (botaoAcao.acao === "limpar") circulo.limpar()
+                    else circulo.escolherArquivo()
+                }
             }
         }
     }
@@ -254,10 +347,16 @@ Item {
     Text {
         anchors.horizontalCenter: parent.horizontalCenter
         y: entrada.y + entrada.height + circulo.d * 0.035
-        width: circulo.d * 0.7
+        width: circulo.d * 0.72
         horizontalAlignment: Text.AlignHCenter
-        text: circulo.analisando ? circulo.nomeArquivo : (circulo.resumo !== "" ? circulo.resumo : "ou arraste para cá")
-        color: Tema.textoSuave
+        text: {
+            if (circulo.erro !== "")
+                return circulo.erro
+            if (circulo.analisando)
+                return circulo.nomeEntrada
+            return circulo.resumo !== "" ? circulo.resumo : "arraste um arquivo ou cole um link"
+        }
+        color: circulo.erro !== "" ? Tema.erro : Tema.textoSuave
         opacity: circulo.opacidadeConteudo
         visible: opacity > 0
         elide: Text.ElideRight

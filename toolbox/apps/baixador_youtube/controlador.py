@@ -78,6 +78,7 @@ class ModeloFila(QAbstractListModel):
 class Controlador(QObject):
     alterado = Signal()
     alteradoProgresso = Signal()  # separado para não reavaliar a tela inteira a cada tique
+    linksRecebidos = Signal()     # links vieram de fora (centro da TOOLBOX): a tela atualiza os campos
 
     def __init__(self, pai=None):
         super().__init__(pai)
@@ -228,6 +229,26 @@ class Controlador(QObject):
     def arquivoBaixado(self) -> str:
         """Arquivo único baixado (vazio para playlists) — pode virar o arquivo da TOOLBOX."""
         return self._arquivo_baixado
+
+    @Slot("QVariantList")
+    def receberLinks(self, links: list) -> None:
+        """Links da entrada compartilhada: um vai para "Um vídeo" (e já analisa), vários para a fila."""
+        links = [str(l) for l in links if l]
+        if not links or self._tarefa:
+            return
+        if len(links) == 1:
+            self._aba = "unico"
+            ja_analisado = links[0] == self._link.strip() and self._estado not in ("vazio", "erro")
+            if not ja_analisado:
+                self._link = links[0]
+                self.linksRecebidos.emit()
+                self.analisarLink()
+                return
+        else:
+            self._aba = "lote"
+            self._texto_links = "\n".join(links)
+            self.linksRecebidos.emit()
+        self.alterado.emit()
 
     @Slot()
     def analisarLink(self) -> None:

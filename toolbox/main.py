@@ -76,6 +76,7 @@ def executar() -> None:
     app.styleHints().setColorScheme(Qt.ColorScheme.Dark)  # barra de título escura
 
     nucleo = Nucleo(descobrir_apps())
+    nucleo.monitorarAreaTransferencia()
     motor = QQmlApplicationEngine()
     motor.rootContext().setContextProperty("nucleo", nucleo)
     motor.load(QUrl.fromLocalFile(str(QML_PRINCIPAL)))

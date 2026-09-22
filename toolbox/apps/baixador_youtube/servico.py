@@ -15,6 +15,7 @@ from yt_dlp import YoutubeDL
 from toolbox.nucleo.arquivo import tamanho_legivel
 from toolbox.nucleo.erros import Cancelado, ErroUsuario
 from toolbox.nucleo.ffmpeg import caminho_ffmpeg
+from toolbox.nucleo.link import extrair_links  # noqa: F401 — usado pelo controlador e pelos testes
 
 # Alturas que fazem sentido oferecer; filtradas contra o que o vídeo realmente tem.
 ALTURAS_CONHECIDAS = [2160, 1440, 1080, 720, 480, 360, 240, 144]
@@ -63,17 +64,6 @@ def mensagem_amigavel(exc: Exception) -> str:
     if "page needs to be reloaded" in baixo:
         return "O YouTube mudou algo no site. Use \"Atualizar motor\" e tente de novo."
     return texto if len(texto) <= 160 else texto[:157] + "..."
-
-
-def extrair_links(texto: str) -> list[str]:
-    """Links http(s) do texto, na ordem, sem repetidos."""
-    vistos, links = set(), []
-    for trecho in (texto or "").split():
-        trecho = trecho.strip()
-        if trecho.startswith(("http://", "https://")) and trecho not in vistos:
-            vistos.add(trecho)
-            links.append(trecho)
-    return links
 
 
 def formatar_duracao(segundos) -> str:
