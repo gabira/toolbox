@@ -59,7 +59,7 @@ class Nucleo(QObject):
         if not caminho or not Path(caminho).is_file():
             return
         self._arquivo = str(Path(caminho))
-        self._tipo = arquivo.tipo_mime(caminho)
+        self._tipo = arquivo.detectar_tipo(caminho)
         self.arquivoAlterado.emit()
 
     @Slot()

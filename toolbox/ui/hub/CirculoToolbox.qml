@@ -9,6 +9,7 @@ Item {
 
     property real k: 0
     property bool destacado: false      // arquivo sendo arrastado por cima
+    property bool analisando: false     // detectando o tipo do arquivo
     property string nomeArquivo: ""
     property string resumo: ""
     signal escolherArquivo()
@@ -41,7 +42,7 @@ Item {
         layer.effect: Brilho { cor: Tema.ciano; intensidade: circulo.destacado ? 1 : 0.8 }
 
         ShapePath {
-            strokeColor: circulo.destacado ? "#A5F3FC" : Tema.ciano
+            strokeColor: circulo.destacado || circulo.analisando ? "#A5F3FC" : Tema.ciano
             strokeWidth: anel.espessura
             fillColor: "transparent"
             capStyle: ShapePath.RoundCap
@@ -58,10 +59,43 @@ Item {
             }
         }
 
-        // Gira só enquanto um arquivo é arrastado (sem animação contínua em repouso).
+        // Gira só ao arrastar ou analisar um arquivo (sem animação contínua em repouso).
         FrameAnimation {
-            running: circulo.destacado
-            onTriggered: anel.rotation = (anel.rotation + frameTime * 45) % 360
+            running: circulo.destacado || circulo.analisando
+            onTriggered: anel.rotation = (anel.rotation + frameTime * (circulo.analisando ? 150 : 45)) % 360
+        }
+    }
+
+    // Arco de varredura que gira no sentido contrário durante a análise
+    Shape {
+        id: varredura
+        anchors.fill: anel
+        opacity: circulo.analisando ? 1 : 0
+        visible: opacity > 0
+        layer.enabled: visible
+        layer.samples: 4
+        layer.effect: Brilho { cor: "#A5F3FC"; intensidade: 1 }
+
+        Behavior on opacity { NumberAnimation { duration: 260 } }
+
+        ShapePath {
+            strokeColor: "#E0FBFF"
+            strokeWidth: anel.espessura * 1.6
+            fillColor: "transparent"
+            capStyle: ShapePath.RoundCap
+            PathAngleArc {
+                centerX: varredura.width / 2
+                centerY: varredura.height / 2
+                radiusX: anel.r
+                radiusY: anel.r
+                startAngle: 0
+                sweepAngle: 70
+            }
+        }
+
+        FrameAnimation {
+            running: varredura.visible
+            onTriggered: varredura.rotation = (varredura.rotation - frameTime * 260) % 360
         }
     }
 
@@ -90,13 +124,32 @@ Item {
                 return
             if (circulo.compacto)
                 circulo.voltar()
-            else if (circulo.k === 0)
+            else if (circulo.k === 0 && !circulo.analisando)
                 circulo.escolherArquivo()
         }
     }
 
+    // Reticências animadas de "Analisando arquivo..."
+    property int pontos: 0
+    Timer {
+        interval: 320
+        repeat: true
+        running: circulo.analisando
+        onTriggered: circulo.pontos = (circulo.pontos + 1) % 4
+        onRunningChanged: circulo.pontos = 0
+    }
+
     Icone {
+        id: cubo
         readonly property real tamanho: circulo.lerp(circulo.d * 0.2, circulo.d * 0.54, circulo.k)
+
+        SequentialAnimation on scale {
+            running: circulo.analisando
+            loops: Animation.Infinite
+            alwaysRunToEnd: true
+            NumberAnimation { to: 1.14; duration: 420; easing.type: Easing.OutQuad }
+            NumberAnimation { to: 1; duration: 420; easing.type: Easing.InQuad }
+        }
         nome: "cubo"
         resolucao: 160
         width: tamanho
@@ -150,9 +203,10 @@ Item {
                 right: botaoAcao.left; rightMargin: entrada.height * 0.2
                 verticalCenter: parent.verticalCenter
             }
-            text: circulo.nomeArquivo !== "" ? circulo.nomeArquivo : "Selecionar arquivo"
+            text: circulo.analisando ? "Analisando arquivo" + ".".repeat(circulo.pontos)
+                                     : (circulo.nomeArquivo !== "" ? circulo.nomeArquivo : "Selecionar arquivo")
             elide: Text.ElideMiddle
-            color: circulo.nomeArquivo !== "" ? Tema.texto : Tema.textoSuave
+            color: circulo.analisando ? "#A5F3FC" : (circulo.nomeArquivo !== "" ? Tema.texto : Tema.textoSuave)
             font.family: Tema.fonte
             font.pixelSize: Math.max(1, entrada.height * 0.3)
             font.weight: Font.DemiBold
@@ -184,7 +238,7 @@ Item {
                 id: areaAcao
                 anchors.fill: parent
                 hoverEnabled: true
-                enabled: circulo.k === 0
+                enabled: circulo.k === 0 && !circulo.analisando
                 cursorShape: Qt.PointingHandCursor
                 onClicked: circulo.nomeArquivo !== "" ? circulo.limparArquivo() : circulo.escolherArquivo()
             }
@@ -196,7 +250,7 @@ Item {
         y: entrada.y + entrada.height + circulo.d * 0.035
         width: circulo.d * 0.7
         horizontalAlignment: Text.AlignHCenter
-        text: circulo.resumo !== "" ? circulo.resumo : "ou arraste para cá"
+        text: circulo.analisando ? circulo.nomeArquivo : (circulo.resumo !== "" ? circulo.resumo : "ou arraste para cá")
         color: Tema.textoSuave
         opacity: circulo.opacidadeConteudo
         visible: opacity > 0

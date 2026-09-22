@@ -2,6 +2,12 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.2.0] - 2026-09-22
+### Adicionado
+- Animação "Analisando arquivo" ao carregar um arquivo: anel girando, arco de varredura, cubo pulsando
+  e texto animado; só depois os apps compatíveis saem do hub.
+- Detecção do tipo pelo conteúdo do arquivo (assinatura dos primeiros bytes), com a extensão como reserva.
+
 ## [0.1.0] - 2026-09-22
 ### Adicionado
 - App **Separador de áudio** (aparece para arquivos de vídeo):
