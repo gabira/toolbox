@@ -17,7 +17,7 @@ Item {
 
     Connections {
         target: nucleo
-        function onArquivoAlterado() { tela.controlador.analisar(nucleo.arquivo) }
+        function onEntradaAlterada() { tela.controlador.analisar(nucleo.arquivo) }
     }
 
     component Rotulo: Text {

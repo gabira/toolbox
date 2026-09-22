@@ -113,6 +113,24 @@ Item {
         }
     }
 
+    // Links vindos do centro da TOOLBOX (colados, arrastados ou da área de transferência)
+    function receberEntrada() {
+        if (nucleo.tipoEntrada === "link")
+            tela.c.receberLinks(nucleo.links)
+    }
+    Component.onCompleted: receberEntrada()
+    Connections {
+        target: nucleo
+        function onEntradaAlterada() { tela.receberEntrada() }
+    }
+    Connections {
+        target: tela.c
+        function onLinksRecebidos() {
+            campoLink.texto = tela.c.link
+            areaLinks.texto = tela.c.textoLinks
+        }
+    }
+
     // Ao iniciar a fila, rola até o progresso para mostrar a lista andando.
     Connections {
         target: tela.c

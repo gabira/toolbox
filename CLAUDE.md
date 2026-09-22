@@ -19,7 +19,9 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - **Novo app** = nova pasta em `toolbox/apps/`. O hub descobre sozinho; `tipos_aceitos` (ex.: `["video/*"]`) define quando ele aparece.
   Apps que trabalham com link/texto usam `"precisa_arquivo": false` e aparecem sempre (selo LINK).
 - O tipo do arquivo é detectado pelo conteúdo (`nucleo.arquivo.detectar_tipo`), com a extensão como reserva.
-- Toda `Tela.qml` recebe `controlador` e `cor` (do manifesto); o arquivo compartilhado está em `nucleo.arquivo` (reagir a `nucleo.onArquivoAlterado`).
+- Toda `Tela.qml` recebe `controlador` e `cor` (do manifesto). A entrada compartilhada é híbrida:
+  `nucleo.tipoEntrada` ("", "arquivo", "link"), `nucleo.arquivo`, `nucleo.links`; reagir a `nucleo.onEntradaAlterada`.
+- Links têm tipo no formato dos arquivos (`nucleo/link.py`: `link/youtube`, `link/web`) — declare em `tipos_aceitos`.
 - Trabalho demorado vai em `nucleo.tarefa.Tarefa` (thread); `servico.py` levanta `nucleo.erros.ErroUsuario`/`Cancelado`.
 - Modelos de referência: `toolbox/apps/separador_audio/` (arquivo) e `toolbox/apps/baixador_youtube/` (link, fila com `QAbstractListModel`).
 - Componentes de UI prontos em `toolbox/ui/componentes/` (Botao, CampoTexto, AreaTexto, SeletorAbas, CaixaMarcar, OpcaoSelecao, Cartao, BarraProgresso).

@@ -103,7 +103,7 @@ Item {
         trocaPendente = false
         estado = "trocando"
 
-        const comAnalise = nucleo.arquivo !== ""
+        const comAnalise = nucleo.tipoEntrada !== ""
         let recolhido = false
         let analisado = !comAnalise
         function seguir() {
@@ -173,7 +173,7 @@ Item {
 
     Connections {
         target: nucleo
-        function onArquivoAlterado() { hub.atualizarApps() }
+        function onEntradaAlterada() { hub.atualizarApps() }
     }
 
     // --- abertura: o logo completo aparece e dá lugar ao hub, depois as bolhas saem ---
@@ -287,16 +287,18 @@ Item {
         font.family: Tema.fonte
         font.pixelSize: 13
         text: {
+            const eLink = nucleo.tipoEntrada === "link"
             if (hub.analisando)
-                return "Analisando o arquivo para encontrar os apps compatíveis…"
+                return "Analisando o " + (eLink ? "link" : "arquivo") + " para encontrar os apps compatíveis…"
             if (nucleo.totalApps === 0)
                 return "Nenhum app instalado ainda."
-            if (nucleo.arquivo === "")
-                return "Arraste um arquivo para a TOOLBOX ou clique no centro para escolher."
+            if (nucleo.tipoEntrada === "")
+                return "Arraste um arquivo, cole um link do YouTube (Ctrl+V) ou clique no centro para escolher."
             const n = nucleo.totalCompativeis
+            const alvo = eLink ? "este link" : "este arquivo"
             if (n === 0)
-                return "Nenhum app disponível para este tipo de arquivo."
-            return n === 1 ? "1 app disponível para este arquivo." : n + " apps disponíveis para este arquivo."
+                return eLink ? "Nenhum app disponível para este link." : "Nenhum app disponível para este tipo de arquivo."
+            return n === 1 ? "1 app disponível para " + alvo + "." : n + " apps disponíveis para " + alvo + "."
         }
     }
 
@@ -332,24 +334,60 @@ Item {
         }
         x: hub.lerp(hub.centroX, centro, hub.k) - diametro / 2
         y: hub.lerp(hub.centroY, centro, hub.k) - diametro / 2
+        id: circulo
         destacado: soltura.containsDrag
         analisando: hub.analisando
-        nomeArquivo: nucleo.nomeArquivo
-        resumo: nucleo.resumoArquivo
+        tipoEntrada: nucleo.tipoEntrada
+        nomeEntrada: nucleo.nomeEntrada
+        resumo: nucleo.resumoEntrada
         onEscolherArquivo: dialogoArquivo.open()
-        onLimparArquivo: nucleo.limparArquivo()
+        onEnviarTexto: (texto) => {
+            const erro = nucleo.definirTexto(texto)
+            if (erro !== "")
+                circulo.mostrarErro(erro)
+        }
+        onLimpar: nucleo.limparEntrada()
         onVoltar: hub.fecharApp()
     }
 
+    // Ctrl+V no hub: arquivo copiado no Explorer, link ou caminho
+    Shortcut {
+        sequences: [StandardKey.Paste]
+        enabled: hub.estado === "hub" && !circulo.editando
+        onActivated: {
+            const erro = nucleo.colarAreaTransferencia()
+            if (erro !== "")
+                circulo.mostrarErro(erro)
+        }
+    }
+
+    // Link do YouTube encontrado na área de transferência
+    OfertaLink {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 20
+        mostrar: nucleo.linkCopiado !== "" && hub.estado === "hub" && hub.intro === 1
+        link: nucleo.linkCopiado
+        resumo: nucleo.resumoLinkCopiado
+        onUsar: nucleo.usarLinkCopiado()
+        onIgnorar: nucleo.ignorarLinkCopiado()
+    }
+
+    // Arrastar e soltar: arquivos do Explorer ou links/texto do navegador
     DropArea {
         id: soltura
         anchors.fill: parent
-        onEntered: (arrasto) => { arrasto.accepted = arrasto.hasUrls }
+        onEntered: (arrasto) => { arrasto.accepted = arrasto.hasUrls || arrasto.hasText }
         onDropped: (soltado) => {
-            if (soltado.hasUrls) {
-                nucleo.definirArquivo(soltado.urls[0].toString())
-                soltado.acceptProposedAction()
+            const url = soltado.hasUrls ? soltado.urls[0].toString() : ""
+            if (url.startsWith("file:"))
+                nucleo.definirArquivo(url)
+            else {
+                const erro = nucleo.definirTexto(soltado.hasText ? soltado.text : url)
+                if (erro !== "")
+                    circulo.mostrarErro(erro)
             }
+            soltado.acceptProposedAction()
         }
     }
 

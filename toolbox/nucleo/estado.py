@@ -1,11 +1,16 @@
-"""Estado global exposto ao QML como `nucleo`: arquivo compartilhado e apps."""
+"""Estado global exposto ao QML como `nucleo`: a entrada compartilhada e os apps.
+
+A entrada é híbrida: um arquivo OU um/vários links. Links ganham um tipo no
+mesmo formato dos arquivos ("link/youtube"), então o filtro de apps é um só.
+"""
 
 from pathlib import Path
 
-from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtGui import QGuiApplication
 
 from toolbox import __version__
-from toolbox.nucleo import arquivo
+from toolbox.nucleo import arquivo, link
 from toolbox.nucleo.registro import AppRegistrado, carregar_controlador
 
 
@@ -19,30 +24,82 @@ def _caminho_local(url_ou_caminho: str) -> str:
 
 
 class Nucleo(QObject):
-    arquivoAlterado = Signal()
+    entradaAlterada = Signal()
+    linkCopiadoAlterado = Signal()
 
     def __init__(self, apps: list[AppRegistrado], pai=None):
         super().__init__(pai)
         self._apps = apps
         self._controladores = {app.id: carregar_controlador(app, self) for app in apps}
         self._arquivo = ""
+        self._links: list[str] = []
         self._tipo = ""
+        # Link do YouTube encontrado na área de transferência (oferecido ao usuário)
+        self._links_copiados: list[str] = []
+        self._copias_dispensadas: set[tuple] = set()
 
-    # --- arquivo compartilhado ---
+    # ------------------------------------------------------------ entrada
 
-    @Property(str, notify=arquivoAlterado)
+    @Property(str, notify=entradaAlterada)
+    def tipoEntrada(self) -> str:
+        """"" (vazia), "arquivo" ou "link"."""
+        return "arquivo" if self._arquivo else ("link" if self._links else "")
+
+    @Property(str, notify=entradaAlterada)
+    def nomeEntrada(self) -> str:
+        if self._arquivo:
+            return Path(self._arquivo).name
+        if len(self._links) == 1:
+            return link.rotulo_curto(self._links[0])
+        return link.descrever(self._links)
+
+    @Property(str, notify=entradaAlterada)
+    def resumoEntrada(self) -> str:
+        return self.resumoArquivo if self._arquivo else link.descrever(self._links)
+
+    @Slot(str, result=str)
+    def definirTexto(self, texto: str) -> str:
+        """Texto colado/digitado: links ou caminho de arquivo. Retorna mensagem de erro ou ""."""
+        links = link.extrair_links(texto)
+        if links:
+            youtube = [l for l in links if link.e_youtube(l)]
+            self._definir_links(youtube or links)
+            return ""
+        caminho = (texto or "").strip().strip('"')
+        if caminho and Path(caminho).is_file():
+            self.definirArquivo(caminho)
+            return ""
+        return "Não reconheci um arquivo ou link nesse texto."
+
+    def _definir_links(self, links: list[str]) -> None:
+        self._arquivo = ""
+        self._links = links
+        self._tipo = link.tipo_links(links)
+        if self._links_copiados == links:
+            self._dispensar_copia()
+        self.entradaAlterada.emit()
+
+    @Slot()
+    def limparEntrada(self) -> None:
+        if self._arquivo or self._links:
+            self._arquivo, self._links, self._tipo = "", [], ""
+            self.entradaAlterada.emit()
+
+    # --- arquivo ---
+
+    @Property(str, notify=entradaAlterada)
     def arquivo(self) -> str:
         return self._arquivo
 
-    @Property(str, notify=arquivoAlterado)
+    @Property(str, notify=entradaAlterada)
     def nomeArquivo(self) -> str:
         return Path(self._arquivo).name if self._arquivo else ""
 
-    @Property(str, notify=arquivoAlterado)
+    @Property(str, notify=entradaAlterada)
     def tipoArquivo(self) -> str:
-        return self._tipo
+        return self._tipo if self._arquivo else ""
 
-    @Property(str, notify=arquivoAlterado)
+    @Property(str, notify=entradaAlterada)
     def resumoArquivo(self) -> str:
         """Ex.: "vídeo · 24,3 MB"."""
         if not self._arquivo:
@@ -58,18 +115,70 @@ class Nucleo(QObject):
         caminho = _caminho_local(url_ou_caminho)
         if not caminho or not Path(caminho).is_file():
             return
+        self._links = []
         self._arquivo = str(Path(caminho))
         self._tipo = arquivo.detectar_tipo(caminho)
-        self.arquivoAlterado.emit()
+        self.entradaAlterada.emit()
+
+    # --- links ---
+
+    @Property("QVariantList", notify=entradaAlterada)
+    def links(self) -> list:
+        return self._links
+
+    # ------------------------------------------------------------ área de transferência
+
+    def monitorarAreaTransferencia(self) -> None:
+        """Oferece usar links do YouTube copiados (agora e sempre que o usuário copiar outro)."""
+        area = QGuiApplication.clipboard()
+        area.dataChanged.connect(self._verificarAreaTransferencia)
+        QTimer.singleShot(1600, self._verificarAreaTransferencia)  # depois da abertura
 
     @Slot()
-    def limparArquivo(self) -> None:
-        if self._arquivo:
-            self._arquivo = ""
-            self._tipo = ""
-            self.arquivoAlterado.emit()
+    def _verificarAreaTransferencia(self) -> None:
+        links = [l for l in link.extrair_links(QGuiApplication.clipboard().text()) if link.e_youtube(l)]
+        if not links or links == self._links or tuple(links) in self._copias_dispensadas:
+            return
+        if links != self._links_copiados:
+            self._links_copiados = links
+            self.linkCopiadoAlterado.emit()
 
-    # --- apps ---
+    @Property(str, notify=linkCopiadoAlterado)
+    def linkCopiado(self) -> str:
+        return link.rotulo_curto(self._links_copiados[0]) if len(self._links_copiados) == 1 else (
+            link.descrever(self._links_copiados))
+
+    @Property(str, notify=linkCopiadoAlterado)
+    def resumoLinkCopiado(self) -> str:
+        return link.descrever(self._links_copiados)
+
+    @Slot()
+    def usarLinkCopiado(self) -> None:
+        if self._links_copiados:
+            self._definir_links(list(self._links_copiados))
+
+    @Slot()
+    def ignorarLinkCopiado(self) -> None:
+        self._dispensar_copia()
+
+    def _dispensar_copia(self) -> None:
+        if self._links_copiados:
+            self._copias_dispensadas.add(tuple(self._links_copiados))
+            self._links_copiados = []
+            self.linkCopiadoAlterado.emit()
+
+    @Slot(result=str)
+    def colarAreaTransferencia(self) -> str:
+        """Ctrl+V no hub: arquivo copiado no Explorer, link ou caminho de arquivo."""
+        dados = QGuiApplication.clipboard().mimeData()
+        if dados and dados.hasUrls():
+            locais = [u.toLocalFile() for u in dados.urls() if u.isLocalFile()]
+            if locais:
+                self.definirArquivo(locais[0])
+                return ""
+        return self.definirTexto(dados.text() if dados else "")
+
+    # ------------------------------------------------------------ apps
 
     def _como_mapa(self, app: AppRegistrado) -> dict:
         return {
@@ -82,21 +191,26 @@ class Nucleo(QObject):
             "semArquivo": not app.precisa_arquivo,
         }
 
-    def _aceita_arquivo_atual(self, app: AppRegistrado) -> bool:
-        return app.precisa_arquivo and arquivo.compativel(app.tipos_aceitos, self._tipo)
+    def _aceita_entrada_atual(self, app: AppRegistrado) -> bool:
+        if self._arquivo and not app.precisa_arquivo:
+            return False  # apps de link não trabalham com o arquivo em si
+        return bool(self._tipo) and arquivo.compativel(app.tipos_aceitos, self._tipo)
 
-    @Property("QVariantList", notify=arquivoAlterado)
+    @Property("QVariantList", notify=entradaAlterada)
     def appsVisiveis(self) -> list:
-        """Sem arquivo: todos. Com arquivo: os que aceitam o tipo dele + os que não usam arquivo."""
-        return [
-            self._como_mapa(app) for app in self._apps
-            if not self._arquivo or not app.precisa_arquivo or self._aceita_arquivo_atual(app)
-        ]
+        """Sem entrada: todos. Arquivo: os compatíveis + os de link. Link: os que aceitam o link."""
+        def visivel(app: AppRegistrado) -> bool:
+            if not self.tipoEntrada:
+                return True
+            if self._arquivo and not app.precisa_arquivo:
+                return True
+            return self._aceita_entrada_atual(app)
+        return [self._como_mapa(app) for app in self._apps if visivel(app)]
 
-    @Property(int, notify=arquivoAlterado)
+    @Property(int, notify=entradaAlterada)
     def totalCompativeis(self) -> int:
-        """Quantos apps trabalham com o arquivo atual (sem contar os de link)."""
-        return sum(1 for app in self._apps if self._aceita_arquivo_atual(app))
+        """Quantos apps trabalham com a entrada atual (com arquivo, sem contar os de link)."""
+        return sum(1 for app in self._apps if self._aceita_entrada_atual(app))
 
     @Property(int, constant=True)
     def totalApps(self) -> int:
