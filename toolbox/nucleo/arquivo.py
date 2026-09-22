@@ -25,6 +25,21 @@ TIPOS_CONHECIDOS = {
     # documentos
     ".pdf": "application/pdf",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword",
+    ".rtf": "application/rtf",
+    ".odt": "application/vnd.oasis.opendocument.text",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls": "application/vnd.ms-excel",
+    ".ods": "application/vnd.oasis.opendocument.spreadsheet",
+    ".csv": "text/csv",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".ppt": "application/vnd.ms-powerpoint",
+    ".odp": "application/vnd.oasis.opendocument.presentation",
+    # texto
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".html": "text/html",
+    ".htm": "text/html",
 }
 
 TIPO_DESCONHECIDO = "application/octet-stream"
@@ -33,8 +48,21 @@ NOMES_CATEGORIA = {
     "video": "vídeo",
     "audio": "áudio",
     "image": "imagem",
+    "text": "texto",
     "application/pdf": "PDF",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "documento do Word",
+    "application/msword": "documento do Word",
+    "application/rtf": "documento RTF",
+    "application/vnd.oasis.opendocument.text": "documento de texto",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "planilha do Excel",
+    "application/vnd.ms-excel": "planilha do Excel",
+    "application/vnd.oasis.opendocument.spreadsheet": "planilha",
+    "text/csv": "planilha CSV",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "apresentação do PowerPoint",
+    "application/vnd.ms-powerpoint": "apresentação do PowerPoint",
+    "application/vnd.oasis.opendocument.presentation": "apresentação",
+    "text/html": "página HTML",
+    "text/markdown": "texto Markdown",
 }
 
 
@@ -86,8 +114,12 @@ def _tipo_pelo_conteudo(cabecalho: bytes, extensao: str) -> str | None:
         return "audio/flac"
     if cabecalho.startswith(b"ID3") or cabecalho[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
         return "audio/mpeg"
-    if inicio == b"PK\x03\x04":  # ZIP: .docx, .xlsx etc. são ZIPs
+    if inicio == b"PK\x03\x04":  # ZIP: .docx, .xlsx, .odt etc. são ZIPs
         return TIPOS_CONHECIDOS.get(extensao, "application/zip")
+    if cabecalho.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):  # OLE2: .doc, .xls, .ppt antigos
+        return TIPOS_CONHECIDOS.get(extensao, "application/x-ole-storage")
+    if cabecalho.startswith(b"{\\rtf"):
+        return "application/rtf"
     return None
 
 

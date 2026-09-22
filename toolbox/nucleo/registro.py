@@ -1,6 +1,7 @@
 """Descoberta dos apps em toolbox/apps/<id>/manifesto.json."""
 
 import importlib
+import importlib.util
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,6 +46,18 @@ def descobrir_apps(pasta_apps: Path = PASTA_APPS) -> list[AppRegistrado]:
             precisa_arquivo=dados.get("precisa_arquivo", True),
         ))
     return sorted(apps, key=lambda app: (app.ordem, app.nome))
+
+
+def carregar_filtro(app: AppRegistrado):
+    """Filtro opcional em toolbox/apps/<id>/filtro.py: `aceita(caminho, tipo) -> bool`.
+
+    Serve para o app aparecer só quando consegue mesmo tratar a entrada
+    (ex.: .docx só vira PDF se houver Word ou LibreOffice instalado).
+    """
+    nome = f"toolbox.apps.{app.id}.filtro"
+    if importlib.util.find_spec(nome) is None:
+        return None
+    return importlib.import_module(nome).aceita
 
 
 def carregar_controlador(app: AppRegistrado, pai):

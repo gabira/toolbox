@@ -2,6 +2,21 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.7.0] - 2026-09-22
+### Adicionado
+- App **Para PDF**: aparece só quando o arquivo pode virar PDF neste computador.
+  - Imagens (JPG, PNG, BMP, GIF, TIFF, WEBP): sem perda de qualidade — o JPEG entra no PDF byte a byte;
+    várias imagens viram várias páginas (adicionar, reordenar, remover); página do tamanho da imagem ou A4.
+  - Word, RTF, ODT, Excel, CSV, ODS, PowerPoint e ODP: pelo Microsoft Office instalado ou, sem ele, LibreOffice.
+  - Texto, Markdown e HTML: pelo motor de texto do Qt, em folha A4.
+  - Nome de saída opcional, pasta (padrão: a do arquivo original), "Abrir PDF" e "Abrir pasta".
+- Filtro opcional por app (`apps/<id>/filtro.py`) para o hub mostrar um app só quando ele consegue tratar a entrada.
+- Detecção de documentos do Office (inclusive .doc/.xls/.ppt antigos) e RTF pelo conteúdo.
+- Dependências novas: Pillow e img2pdf.
+
+### Alterado
+- Funções de nome de arquivo de saída movidas para `nucleo/nomes.py` (usadas por mais de um app).
+
 ## [0.6.0] - 2026-09-22
 ### Adicionado
 - Entrada híbrida no centro: aceita arquivo **ou** link. Cole/digite um link do YouTube na pílula

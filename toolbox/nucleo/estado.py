@@ -11,7 +11,7 @@ from PySide6.QtGui import QGuiApplication
 
 from toolbox import __version__
 from toolbox.nucleo import arquivo, link
-from toolbox.nucleo.registro import AppRegistrado, carregar_controlador
+from toolbox.nucleo.registro import AppRegistrado, carregar_controlador, carregar_filtro
 
 
 def _url(caminho: Path) -> str:
@@ -31,6 +31,7 @@ class Nucleo(QObject):
         super().__init__(pai)
         self._apps = apps
         self._controladores = {app.id: carregar_controlador(app, self) for app in apps}
+        self._filtros = {app.id: carregar_filtro(app) for app in apps}
         self._arquivo = ""
         self._links: list[str] = []
         self._tipo = ""
@@ -194,7 +195,10 @@ class Nucleo(QObject):
     def _aceita_entrada_atual(self, app: AppRegistrado) -> bool:
         if self._arquivo and not app.precisa_arquivo:
             return False  # apps de link não trabalham com o arquivo em si
-        return bool(self._tipo) and arquivo.compativel(app.tipos_aceitos, self._tipo)
+        if not self._tipo or not arquivo.compativel(app.tipos_aceitos, self._tipo):
+            return False
+        filtro = self._filtros.get(app.id)
+        return filtro is None or bool(filtro(self._arquivo or None, self._tipo))
 
     @Property("QVariantList", notify=entradaAlterada)
     def appsVisiveis(self) -> list:

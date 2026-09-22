@@ -1,0 +1,16 @@
+{
+  "nome": "Para PDF",
+  "descricao": "Transforme imagens, documentos, planilhas, apresentações e textos em PDF",
+  "cor": "#F59E0B",
+  "tipos_aceitos": [
+    "image/jpeg", "image/png", "image/bmp", "image/gif", "image/tiff", "image/webp",
+    "text/plain", "text/markdown", "text/html", "text/csv",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword", "application/rtf", "application/vnd.oasis.opendocument.text",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel", "application/vnd.oasis.opendocument.spreadsheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.ms-powerpoint", "application/vnd.oasis.opendocument.presentation"
+  ],
+  "ordem": 3
+}
