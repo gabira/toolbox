@@ -38,21 +38,31 @@ def _host(url: str) -> str:
     return host[4:] if host.startswith("www.") else host
 
 
+_RE_ID_VIDEO = re.compile(r"[A-Za-z0-9_-]{11}")      # IDs de vídeo do YouTube têm 11 caracteres
+_RE_ID_PLAYLIST = re.compile(r"[A-Za-z0-9_-]{10,}")
+
+
 def e_youtube(url: str) -> bool:
-    """True para links de vídeo, short, live ou playlist do YouTube."""
-    host = _host(url)
-    if host not in HOSTS_YOUTUBE:
-        return False
+    """True só para links reais de vídeo, short, live ou playlist do YouTube (domínio e ID válidos)."""
     partes = urlparse(url)
-    if host == "youtu.be":
-        return len(partes.path.strip("/")) > 0
-    consulta = parse_qs(partes.query)
+    if partes.scheme not in ("http", "https") or _host(url) not in HOSTS_YOUTUBE:
+        return False
     caminho = partes.path.rstrip("/")
-    return (
-        (caminho == "/watch" and "v" in consulta)
-        or (caminho == "/playlist" and "list" in consulta)
-        or caminho.startswith(("/shorts/", "/live/", "/embed/"))
-    )
+    consulta = parse_qs(partes.query)
+
+    def id_video(valor: str) -> bool:
+        return bool(_RE_ID_VIDEO.fullmatch(valor))
+
+    if _host(url) == "youtu.be":
+        return id_video(caminho.strip("/"))
+    if caminho == "/watch":
+        return id_video(consulta.get("v", [""])[0])
+    if caminho == "/playlist":
+        return bool(_RE_ID_PLAYLIST.fullmatch(consulta.get("list", [""])[0]))
+    for prefixo in ("/shorts/", "/live/", "/embed/"):
+        if caminho.startswith(prefixo):
+            return id_video(caminho[len(prefixo):])
+    return False
 
 
 def tipo_links(links: list[str]) -> str:
@@ -65,9 +75,9 @@ def descrever(links: list[str]) -> str:
         return ""
     youtube = tipo_links(links) == TIPO_YOUTUBE
     if len(links) > 1:
-        return f"{len(links)} links do YouTube" if youtube else f"{len(links)} links"
+        return f"{len(links)} links do YouTube" if youtube else f"{len(links)} links (não são do YouTube)"
     if not youtube:
-        return "link"
+        return "link (não é do YouTube)"
     caminho = urlparse(links[0]).path
     if caminho.startswith("/playlist"):
         return "playlist do YouTube"

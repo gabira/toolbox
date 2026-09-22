@@ -138,10 +138,27 @@ def compativel(tipos_aceitos: list[str], mime: str) -> bool:
     return any(fnmatch(mime, padrao) for padrao in tipos_aceitos)
 
 
+FORMATOS_MIDIA = {
+    "image/jpeg": "JPEG", "image/png": "PNG", "image/gif": "GIF", "image/bmp": "BMP",
+    "image/webp": "WEBP", "image/tiff": "TIFF", "image/heic": "HEIC",
+    "video/mp4": "MP4", "video/x-m4v": "M4V", "video/x-matroska": "MKV", "video/webm": "WEBM",
+    "video/quicktime": "MOV", "video/x-msvideo": "AVI", "video/x-ms-wmv": "WMV", "video/x-flv": "FLV",
+    "video/mp2t": "TS", "video/3gpp": "3GP", "video/mpeg": "MPEG", "video/ogg": "OGV",
+    "audio/mpeg": "MP3", "audio/mp4": "M4A", "audio/aac": "AAC", "audio/wav": "WAV",
+    "audio/flac": "FLAC", "audio/ogg": "OGG", "audio/opus": "OPUS", "audio/x-ms-wma": "WMA",
+}
+
+
 def nome_categoria(mime: str) -> str:
     if mime in NOMES_CATEGORIA:
         return NOMES_CATEGORIA[mime]
     return NOMES_CATEGORIA.get(mime.split("/")[0], "arquivo")
+
+
+def descrever_tipo(mime: str) -> str:
+    """Ex.: "imagem PNG", "vídeo MKV", "documento do Word"."""
+    formato = FORMATOS_MIDIA.get(mime)
+    return f"{nome_categoria(mime)} {formato}" if formato else nome_categoria(mime)
 
 
 def tamanho_legivel(bytes_: int) -> str:

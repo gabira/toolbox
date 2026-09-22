@@ -17,7 +17,8 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - `toolbox/ui/` — janela, hub (animações), componentes, tema e `imagens/` (logo: `Tema.imagem("logo_simbolo")` etc.).
 - `toolbox/apps/<id>/` — cada app é autocontido: `manifesto.json`, `controlador.py` (QObject exposto ao QML), `servico.py` (regra de negócio, sem interface), `Tela.qml`, `icone.svg`, `testes/`.
 - **Novo app** = nova pasta em `toolbox/apps/`. O hub descobre sozinho; `tipos_aceitos` (ex.: `["video/*"]`) define quando ele aparece.
-  Apps que trabalham com link/texto usam `"precisa_arquivo": false` e aparecem sempre (selo LINK).
+  Apps de link usam `"precisa_arquivo": false` (selo LINK): aparecem com o centro vazio ou com um link
+  compatível, nunca com arquivo. Links do YouTube só valem com domínio e ID exatos (`nucleo/link.py`).
   Filtro opcional `apps/<id>/filtro.py` com `aceita(caminho, tipo) -> bool` (ex.: .docx só com Word/LibreOffice).
 - O tipo do arquivo é detectado pelo conteúdo (`nucleo.arquivo.detectar_tipo`), com a extensão como reserva.
 - Toda `Tela.qml` recebe `controlador` e `cor` (do manifesto). A entrada compartilhada é híbrida:
