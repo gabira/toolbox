@@ -1,0 +1,8 @@
+{
+  "nome": "Gravador",
+  "descricao": "Grava o seu microfone e o som do computador em um único arquivo",
+  "cor": "#EC4899",
+  "precisa_arquivo": false,
+  "tipos_aceitos": [],
+  "ordem": 4
+}

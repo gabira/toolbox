@@ -20,7 +20,7 @@ class AppRegistrado:
     tipos_aceitos: list[str]
     ordem: int
     pasta: Path
-    precisa_arquivo: bool = True  # False = trabalha com link/texto; aparece sempre no hub
+    precisa_arquivo: bool = True  # False = link ou nenhuma entrada; nunca aparece com arquivo
 
     @property
     def icone(self) -> Path:

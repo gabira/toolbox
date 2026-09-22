@@ -2,6 +2,19 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.8.0] - 2026-09-22
+### Adicionado
+- App **Gravador**: grava o microfone e o som do computador (ex.: você e os participantes de uma videochamada)
+  e salva tudo em um único arquivo — FLAC 24 bits (padrão), WAV 24 bits ou MP3 320 kb/s.
+  - Captura do som do PC por loopback do WASAPI (sem Mixagem Estéreo nem driver virtual).
+  - Silêncios do PC não tiram as faixas de sincronia; a mixagem mantém o volume de cada voz, com limitador.
+  - Medidores de nível, cronômetro, escolha de microfone e saída, nome e pasta de destino.
+  - A gravação continua ao voltar para o hub; fechar a janela gravando salva o arquivo.
+- Dependência `PyAudioWPatch` (instalada sozinha pelo `iniciar.bat`).
+
+### Alterado
+- Selo LINK só aparece nas bolhas de apps que aceitam links.
+
 ## [0.7.2] - 2026-09-22
 ### Corrigido
 - Com um arquivo no centro (ex.: imagem PNG), o "Baixar do YouTube" aparecia junto. Agora ele só aparece
