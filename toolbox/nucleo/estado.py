@@ -60,15 +60,16 @@ class Nucleo(QObject):
 
     @Slot(str, result=str)
     def definirTexto(self, texto: str) -> str:
-        """Texto colado/digitado: links ou caminho de arquivo. Retorna mensagem de erro ou ""."""
+        """Texto colado/digitado: caminho de arquivo ou links. Retorna mensagem de erro ou ""."""
+        # Um caminho de arquivo que existe vale como arquivo, mesmo que o nome pareça um link.
+        caminho = _caminho_local((texto or "").strip().strip('"'))
+        if caminho and Path(caminho).is_file():
+            self.definirArquivo(caminho)
+            return ""
         links = link.extrair_links(texto)
         if links:
             youtube = [l for l in links if link.e_youtube(l)]
             self._definir_links(youtube or links)
-            return ""
-        caminho = (texto or "").strip().strip('"')
-        if caminho and Path(caminho).is_file():
-            self.definirArquivo(caminho)
             return ""
         return "Não reconheci um arquivo ou link nesse texto."
 
@@ -109,7 +110,7 @@ class Nucleo(QObject):
             tamanho = arquivo.tamanho_legivel(Path(self._arquivo).stat().st_size)
         except OSError:
             tamanho = "?"
-        return f"{arquivo.nome_categoria(self._tipo)} · {tamanho}"
+        return f"{arquivo.descrever_tipo(self._tipo)} · {tamanho}"
 
     @Slot(str)
     def definirArquivo(self, url_ou_caminho: str) -> None:
@@ -202,18 +203,18 @@ class Nucleo(QObject):
 
     @Property("QVariantList", notify=entradaAlterada)
     def appsVisiveis(self) -> list:
-        """Sem entrada: todos. Arquivo: os compatíveis + os de link. Link: os que aceitam o link."""
-        def visivel(app: AppRegistrado) -> bool:
-            if not self.tipoEntrada:
-                return True
-            if self._arquivo and not app.precisa_arquivo:
-                return True
-            return self._aceita_entrada_atual(app)
-        return [self._como_mapa(app) for app in self._apps if visivel(app)]
+        """Sem entrada: todos. Com arquivo ou link: só os que aceitam aquela entrada.
+
+        Ex.: o Baixar do YouTube só aparece para links do YouTube, nunca para um arquivo.
+        """
+        return [
+            self._como_mapa(app) for app in self._apps
+            if not self.tipoEntrada or self._aceita_entrada_atual(app)
+        ]
 
     @Property(int, notify=entradaAlterada)
     def totalCompativeis(self) -> int:
-        """Quantos apps trabalham com a entrada atual (com arquivo, sem contar os de link)."""
+        """Quantos apps trabalham com a entrada atual."""
         return sum(1 for app in self._apps if self._aceita_entrada_atual(app))
 
     @Property(int, constant=True)

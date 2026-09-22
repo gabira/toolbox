@@ -2,6 +2,17 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.7.2] - 2026-09-22
+### Corrigido
+- Com um arquivo no centro (ex.: imagem PNG), o "Baixar do YouTube" aparecia junto. Agora ele só aparece
+  com o centro vazio ou com um link do YouTube.
+- Links do YouTube só são aceitos com domínio exato e ID válido (vídeo de 11 caracteres, short, live ou playlist);
+  domínios parecidos, páginas de canal e miniaturas são recusados.
+- Um caminho de arquivo colado vale como arquivo antes de qualquer tentativa de ler como link.
+
+### Alterado
+- Resumo da entrada mais claro: "imagem PNG · 1,5 KB", "vídeo MKV · 1,2 GB", "link (não é do YouTube)".
+
 ## [0.7.1] - 2026-09-22
 ### Alterado
 - Centro do hub sem o símbolo "T" (fica só a palavra TOOLBOX, a entrada e a dica); o "T" continua como ícone do canto.
