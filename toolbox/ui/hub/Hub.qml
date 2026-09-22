@@ -188,14 +188,14 @@ Item {
         id: animIntro
         running: true
         ParallelAnimation {
-            NumberAnimation { target: logoIntro; property: "opacity"; to: 1; duration: 380; easing.type: Easing.OutCubic }
-            NumberAnimation { target: logoIntro; property: "scale"; to: 1; duration: 500; easing.type: Easing.OutBack }
+            NumberAnimation { target: logoIntro; property: "opacity"; to: 1; duration: 570; easing.type: Easing.OutCubic }
+            NumberAnimation { target: logoIntro; property: "scale"; to: 1; duration: 750; easing.type: Easing.OutBack }
         }
-        PauseAnimation { duration: 220 }
+        PauseAnimation { duration: 330 }
         ParallelAnimation {
-            NumberAnimation { target: logoIntro; property: "opacity"; to: 0; duration: 300 }
-            NumberAnimation { target: logoIntro; property: "scale"; to: 0.55; duration: 380; easing.type: Easing.InCubic }
-            NumberAnimation { target: hub; property: "intro"; to: 1; duration: 460; easing.type: Easing.OutBack }
+            NumberAnimation { target: logoIntro; property: "opacity"; to: 0; duration: 450 }
+            NumberAnimation { target: logoIntro; property: "scale"; to: 0.55; duration: 570; easing.type: Easing.InCubic }
+            NumberAnimation { target: hub; property: "intro"; to: 1; duration: 690; easing.type: Easing.OutBack }
         }
         ScriptAction { script: hub.iniciar() }
     }

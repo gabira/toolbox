@@ -64,10 +64,18 @@ class RecarregadorQml:
         self._vigiar()  # editores que salvam substituindo o arquivo removem o vigia
 
 
+def _identificar_no_windows() -> None:
+    """Sem isto o Windows agrupa a janela com o pythonw.exe e mostra o ícone do Python na barra de tarefas."""
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("TOOLBOX.Hub")
+
+
 def executar() -> None:
     dev = "--dev" in sys.argv
     _configurar_log(dev)
     qInstallMessageHandler(_mensagem_qt)
+    _identificar_no_windows()
 
     app = QGuiApplication(sys.argv)
     app.setApplicationName("TOOLBOX")
