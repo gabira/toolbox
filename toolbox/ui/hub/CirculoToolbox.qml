@@ -164,34 +164,27 @@ Item {
         onRunningChanged: circulo.pontos = 0
     }
 
-    // Símbolo "T" do logo (vira o ícone do canto no modo compacto)
+    // Símbolo "T" do logo: só aparece no modo compacto (ícone do canto com o app aberto)
     Image {
-        id: simbolo
-        readonly property real tamanho: circulo.lerp(circulo.d * 0.25, circulo.d * 0.68, circulo.k)
-
-        SequentialAnimation on scale {
-            running: circulo.analisando
-            loops: Animation.Infinite
-            alwaysRunToEnd: true
-            NumberAnimation { to: 1.12; duration: 420; easing.type: Easing.OutQuad }
-            NumberAnimation { to: 1; duration: 420; easing.type: Easing.InQuad }
-        }
+        readonly property real tamanho: circulo.d * 0.68
         source: Tema.imagem("logo_simbolo")
-        sourceSize: Qt.size(256, 256)
+        sourceSize: Qt.size(128, 128)
         fillMode: Image.PreserveAspectFit
         smooth: true
         mipmap: true
         width: tamanho
         height: tamanho
         x: (circulo.d - tamanho) / 2
-        y: circulo.lerp(circulo.d * 0.1, (circulo.d - tamanho) / 2, circulo.k)
+        y: (circulo.d - tamanho) / 2
+        opacity: Math.max(0, circulo.k * 3 - 2)
+        visible: opacity > 0
     }
 
-    // Palavra "TOOLBOX" do logo
+    // Palavra "TOOLBOX" do logo (pulsa durante a análise)
     Image {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: circulo.d * 0.385
-        width: circulo.d * 0.58
+        y: circulo.d * 0.29
+        width: circulo.d * 0.62
         height: width * 229 / 799
         source: Tema.imagem("logo_texto")
         sourceSize: Qt.size(600, 172)
@@ -200,6 +193,14 @@ Item {
         mipmap: true
         opacity: circulo.opacidadeConteudo
         visible: opacity > 0
+
+        SequentialAnimation on scale {
+            running: circulo.analisando
+            loops: Animation.Infinite
+            alwaysRunToEnd: true
+            NumberAnimation { to: 1.06; duration: 420; easing.type: Easing.OutQuad }
+            NumberAnimation { to: 1; duration: 420; easing.type: Easing.InQuad }
+        }
     }
 
     // Entrada híbrida compartilhada: arquivo (ícone de pasta / arrastar) ou link (colar/digitar)
@@ -208,7 +209,7 @@ Item {
         width: circulo.d * 0.76
         height: circulo.d * 0.15
         anchors.horizontalCenter: parent.horizontalCenter
-        y: circulo.d * 0.585
+        y: circulo.d * 0.51
         radius: height / 2
         opacity: circulo.opacidadeConteudo
         visible: opacity > 0

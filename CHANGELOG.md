@@ -2,6 +2,15 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.7.1] - 2026-09-22
+### Alterado
+- Centro do hub sem o símbolo "T" (fica só a palavra TOOLBOX, a entrada e a dica); o "T" continua como ícone do canto.
+- Ícone da janela, da barra de tarefas e do atalho: só o símbolo "T", sem texto.
+- Abertura com o logo 50% mais longa.
+
+### Corrigido
+- Barra de tarefas do Windows mostrava o ícone do Python: o processo agora tem identidade própria (AppUserModelID).
+
 ## [0.7.0] - 2026-09-22
 ### Adicionado
 - App **Para PDF**: aparece só quando o arquivo pode virar PDF neste computador.
