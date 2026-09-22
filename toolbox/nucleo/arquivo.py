@@ -46,6 +46,61 @@ def tipo_mime(caminho: str | Path) -> str:
     return tipo or TIPO_DESCONHECIDO
 
 
+def _tipo_pelo_conteudo(cabecalho: bytes, extensao: str) -> str | None:
+    """Reconhece o formato pela assinatura dos primeiros bytes."""
+    inicio = cabecalho[:4]
+    if cabecalho.startswith(b"%PDF"):
+        return "application/pdf"
+    if cabecalho.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if cabecalho.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if cabecalho[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if inicio in (b"II*\x00", b"MM\x00*"):
+        return "image/tiff"
+    if inicio == b"RIFF":
+        return {b"WEBP": "image/webp", b"WAVE": "audio/wav", b"AVI ": "video/x-msvideo"}.get(cabecalho[8:12])
+    if cabecalho[4:8] == b"ftyp":
+        marca = cabecalho[8:12]
+        if marca in (b"M4A ", b"M4B "):
+            return "audio/mp4"
+        if marca in (b"heic", b"heix", b"mif1"):
+            return "image/heic"
+        return "video/quicktime" if marca == b"qt  " else "video/mp4"
+    if inicio == b"\x1a\x45\xdf\xa3":  # Matroska / WebM
+        if extensao == ".mka":
+            return "audio/x-matroska"
+        return "video/webm" if b"webm" in cabecalho[:64] else "video/x-matroska"
+    if inicio == b"\x30\x26\xb2\x75":  # ASF
+        return "audio/x-ms-wma" if extensao == ".wma" else "video/x-ms-wmv"
+    if cabecalho.startswith(b"FLV"):
+        return "video/x-flv"
+    if inicio == b"\x00\x00\x01\xba":
+        return "video/mpeg"
+    if len(cabecalho) > 188 and cabecalho[0] == 0x47 and cabecalho[188] == 0x47:
+        return "video/mp2t"
+    if inicio == b"OggS":
+        return "video/ogg" if extensao == ".ogv" else "audio/ogg"
+    if inicio == b"fLaC":
+        return "audio/flac"
+    if cabecalho.startswith(b"ID3") or cabecalho[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
+        return "audio/mpeg"
+    if inicio == b"PK\x03\x04":  # ZIP: .docx, .xlsx etc. são ZIPs
+        return TIPOS_CONHECIDOS.get(extensao, "application/zip")
+    return None
+
+
+def detectar_tipo(caminho: str | Path) -> str:
+    """Tipo pelo conteúdo; se a assinatura não for reconhecida, pela extensão."""
+    try:
+        with open(caminho, "rb") as arquivo_aberto:
+            cabecalho = arquivo_aberto.read(512)
+    except OSError:
+        cabecalho = b""
+    return _tipo_pelo_conteudo(cabecalho, Path(caminho).suffix.lower()) or tipo_mime(caminho)
+
+
 def compativel(tipos_aceitos: list[str], mime: str) -> bool:
     """Aceita curingas no estilo "video/*"."""
     return any(fnmatch(mime, padrao) for padrao in tipos_aceitos)

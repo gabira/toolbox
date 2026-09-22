@@ -79,7 +79,7 @@ class Controlador(QObject):
 
         if not caminho:
             self._analise = {"estado": "vazio"}
-        elif not arquivo.tipo_mime(caminho).startswith("video/"):
+        elif not arquivo.detectar_tipo(caminho).startswith("video/"):
             self._analise = {"estado": "erro", "mensagem": "O arquivo atual não é um vídeo."}
         else:
             self._analise = {"estado": "analisando"}

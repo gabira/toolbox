@@ -29,8 +29,10 @@ Item {
     property bool trocaPendente: false
     property bool compacto: false
     property real k: compacto ? 1 : 0   // 0 = hub no centro, 1 = ícone no canto
+    property bool analisando: false     // animação "Analisando arquivo" no círculo
     property var aposExpandir: null
     property var aposRecolher: null
+    property var aposAnalise: null
 
     Behavior on k { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
 
@@ -91,7 +93,8 @@ Item {
             atualizarApps()
     }
 
-    // Arquivo mudou: bolhas voltam para dentro e só as compatíveis saem de novo.
+    // Arquivo mudou: bolhas voltam para dentro, a toolbox mostra a análise do
+    // arquivo e só as compatíveis saem de novo.
     function atualizarApps() {
         if (estado !== "hub") {
             trocaPendente = true
@@ -99,10 +102,31 @@ Item {
         }
         trocaPendente = false
         estado = "trocando"
-        recolher(function () {
+
+        const comAnalise = nucleo.arquivo !== ""
+        let recolhido = false
+        let analisado = !comAnalise
+        function seguir() {
+            if (!recolhido || !analisado)
+                return
+            analisando = false
             modelo = nucleo.appsVisiveis
             expandir(aoFicarOcioso)
-        })
+        }
+
+        analisando = comAnalise
+        if (comAnalise) {
+            aposAnalise = function () { analisado = true; seguir() }
+            timerAnalise.restart()
+        }
+        recolher(function () { recolhido = true; seguir() })
+    }
+
+    // Tempo mínimo da animação "Analisando arquivo" (a detecção em si é instantânea).
+    Timer {
+        id: timerAnalise
+        interval: 1100
+        onTriggered: hub.executarAposAnimacao("aposAnalise")
     }
 
     function abrirApp(i) {
@@ -240,6 +264,8 @@ Item {
         font.family: Tema.fonte
         font.pixelSize: 13
         text: {
+            if (hub.analisando)
+                return "Analisando o arquivo para encontrar os apps compatíveis…"
             if (nucleo.totalApps === 0)
                 return "Nenhum app instalado ainda."
             if (nucleo.arquivo === "")
@@ -277,6 +303,7 @@ Item {
         x: hub.lerp(hub.centroX, centro, hub.k) - diametro / 2
         y: hub.lerp(hub.centroY, centro, hub.k) - diametro / 2
         destacado: soltura.containsDrag
+        analisando: hub.analisando
         nomeArquivo: nucleo.nomeArquivo
         resumo: nucleo.resumoArquivo
         onEscolherArquivo: dialogoArquivo.open()
