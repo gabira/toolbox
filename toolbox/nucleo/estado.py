@@ -79,15 +79,24 @@ class Nucleo(QObject):
             "cor": app.cor,
             "icone": _url(app.icone),
             "tela": _url(app.tela),
+            "semArquivo": not app.precisa_arquivo,
         }
+
+    def _aceita_arquivo_atual(self, app: AppRegistrado) -> bool:
+        return app.precisa_arquivo and arquivo.compativel(app.tipos_aceitos, self._tipo)
 
     @Property("QVariantList", notify=arquivoAlterado)
     def appsVisiveis(self) -> list:
-        """Sem arquivo: todos. Com arquivo: só os que aceitam o tipo dele."""
+        """Sem arquivo: todos. Com arquivo: os que aceitam o tipo dele + os que não usam arquivo."""
         return [
             self._como_mapa(app) for app in self._apps
-            if not self._arquivo or arquivo.compativel(app.tipos_aceitos, self._tipo)
+            if not self._arquivo or not app.precisa_arquivo or self._aceita_arquivo_atual(app)
         ]
+
+    @Property(int, notify=arquivoAlterado)
+    def totalCompativeis(self) -> int:
+        """Quantos apps trabalham com o arquivo atual (sem contar os de link)."""
+        return sum(1 for app in self._apps if self._aceita_arquivo_atual(app))
 
     @Property(int, constant=True)
     def totalApps(self) -> int:

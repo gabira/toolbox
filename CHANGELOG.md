@@ -2,6 +2,20 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.4.0] - 2026-09-22
+### Adicionado
+- App **Baixar do YouTube** (portado do projeto download_yt), sempre disponível no hub por usar link:
+  - Aba "Um vídeo": analisa o link, mostra miniatura, título, canal e só as resoluções que o vídeo tem;
+    playlists detectadas com opção de baixar inteira; "Usar na TOOLBOX" envia o vídeo baixado ao hub.
+  - Aba "Vários vídeos": lista de links (um por linha), qualidade como teto, "Só conferir", "Parar"
+    e fila com o estado de cada link — um link com erro não para os outros.
+  - MP4 com H.264 + AAC sempre que possível; "Apenas áudio" em MP3 320 kb/s.
+  - Usa o FFmpeg embarcado (não precisa instalar) e reaproveita a pasta salva do app antigo.
+  - Botão "Atualizar motor" (yt-dlp) para quando o YouTube mudar o site.
+- Apps sem arquivo (`"precisa_arquivo": false`) aparecem sempre no hub, com selo LINK.
+- Componentes `SeletorAbas`, `AreaTexto` e `CaixaMarcar`.
+- Dependência nova: `yt-dlp` (instalada automaticamente pelo `iniciar.bat`).
+
 ## [0.3.0] - 2026-09-22
 ### Adicionado
 - Separador de áudio: campo opcional de nome do arquivo de saída, já preenchido com o nome do vídeo,

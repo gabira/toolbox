@@ -54,6 +54,38 @@ Item {
                 font.pixelSize: Math.max(1, bolha.width * 0.1)
                 font.weight: Font.Bold
             }
+            // Apps que trabalham com link aparecem com qualquer arquivo
+            Rectangle {
+                visible: bolha.app.semArquivo === true
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: linhaLink.implicitWidth + bolha.width * 0.1
+                height: bolha.height * 0.13
+                radius: height / 2
+                color: Tema.comAlfa("white", 0.14)
+                border.width: 1
+                border.color: Tema.comAlfa("white", 0.3)
+                Row {
+                    id: linhaLink
+                    anchors.centerIn: parent
+                    spacing: bolha.width * 0.025
+                    Icone {
+                        anchors.verticalCenter: parent.verticalCenter
+                        nome: "link"
+                        resolucao: 32
+                        width: bolha.width * 0.07
+                        height: width
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "LINK"
+                        color: Tema.texto
+                        font.family: Tema.fonte
+                        font.pixelSize: Math.max(1, bolha.width * 0.065)
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1
+                    }
+                }
+            }
         }
     }
 
