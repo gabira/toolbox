@@ -1,0 +1,7 @@
+{
+  "nome": "Separador de áudio",
+  "descricao": "Extrai o áudio de um vídeo na melhor qualidade possível",
+  "cor": "#8B5CF6",
+  "tipos_aceitos": ["video/*"],
+  "ordem": 1
+}

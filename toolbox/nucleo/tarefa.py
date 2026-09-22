@@ -1,10 +1,8 @@
 """Execução de trabalhos demorados fora da thread da interface."""
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QCoreApplication, QThread, Signal
 
-
-class Cancelado(Exception):
-    """Levantada pela função da tarefa quando o usuário cancela."""
+from toolbox.nucleo.erros import Cancelado
 
 
 class Tarefa(QThread):
@@ -24,9 +22,16 @@ class Tarefa(QThread):
         self._funcao = funcao
         self._cancelar = False
         self.finished.connect(self.deleteLater)
+        # Fechar a janela no meio de uma tarefa: cancela e espera a thread terminar.
+        if app := QCoreApplication.instance():
+            app.aboutToQuit.connect(self._encerrar)
 
     def cancelar(self) -> None:
         self._cancelar = True
+
+    def _encerrar(self) -> None:
+        self.cancelar()
+        self.wait(5000)
 
     def run(self) -> None:
         try:
