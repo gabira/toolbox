@@ -2,6 +2,19 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.1.0] - 2026-09-22
+### Adicionado
+- App **Separador de áudio** (aparece para arquivos de vídeo):
+  - Detecta a faixa de áudio (codec, taxa, canais, bitrate, duração).
+  - Formato "Original" copia a faixa sem reencodar (sem perdas) no contêiner certo (AAC→.m4a, Opus→.opus etc.).
+  - Opções FLAC, WAV 24 bits e MP3 320 kb/s.
+  - Pasta de destino e formato lembrados entre usos; nunca sobrescreve arquivos existentes.
+  - Barra de progresso, cancelamento (remove o arquivo parcial) e botão "Abrir pasta".
+- `nucleo/erros.py` com exceções compartilhadas; tarefas em thread são canceladas ao fechar a janela.
+
+### Corrigido
+- Erros de QML no console ao fechar o programa (ordem de destruição do motor QML).
+
 ## [0.0.1] - 2026-09-22
 ### Adicionado
 - Estrutura base em Python + PySide6 (QML), app nativo sem web/servidor.

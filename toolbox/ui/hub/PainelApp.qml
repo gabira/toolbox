@@ -33,7 +33,8 @@ Item {
         diametroInicial = diametro
         revelado = false
         conteudo.opacity = 0
-        carregador.setSource(dadosApp.tela, { controlador: nucleo.controlador(dadosApp.id) })
+        // Toda Tela.qml recebe o controlador do app e a cor do manifesto.
+        carregador.setSource(dadosApp.tela, { controlador: nucleo.controlador(dadosApp.id), cor: dadosApp.cor })
         animAbrir.start()
     }
 

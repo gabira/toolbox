@@ -84,4 +84,8 @@ def executar() -> None:
         sys.exit(1)
 
     recarregador = RecarregadorQml(motor) if dev else None  # noqa: F841 — mantém vivo
-    sys.exit(app.exec())
+    codigo = app.exec()
+    # O motor QML precisa morrer antes do `nucleo`, senão as ligações leem `null` ao fechar.
+    del recarregador, motor
+    del nucleo
+    sys.exit(codigo)
