@@ -72,7 +72,7 @@ def executar() -> None:
     app = QGuiApplication(sys.argv)
     app.setApplicationName("TOOLBOX")
     app.setOrganizationName("TOOLBOX")
-    app.setWindowIcon(QIcon(str(PASTA_UI / "icones" / "cubo.svg")))
+    app.setWindowIcon(QIcon(str(PASTA_UI / "imagens" / "toolbox.ico")))
     app.styleHints().setColorScheme(Qt.ColorScheme.Dark)  # barra de título escura
 
     nucleo = Nucleo(descobrir_apps())

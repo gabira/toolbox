@@ -8,12 +8,13 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 
 ## Executar
 - `iniciar.bat` — uso normal (cria `.venv` e instala dependências só na 1ª vez ou quando `requirements*.txt` mudar).
+- `criar-atalho.bat` — cria o atalho na Área de Trabalho (ícone em `toolbox/ui/imagens/toolbox.ico`).
 - `iniciar.bat --dev` — console com logs + recarga automática do QML ao salvar.
 - Gerar `.exe`/instalador **somente quando o usuário pedir**.
 
 ## Estrutura (inspirada nos "apps" do Django)
 - `toolbox/nucleo/` — compartilhado: registro de apps, tipo de arquivo, config, FFmpeg, tarefas em thread.
-- `toolbox/ui/` — janela, hub (animações), componentes e tema.
+- `toolbox/ui/` — janela, hub (animações), componentes, tema e `imagens/` (logo: `Tema.imagem("logo_simbolo")` etc.).
 - `toolbox/apps/<id>/` — cada app é autocontido: `manifesto.json`, `controlador.py` (QObject exposto ao QML), `servico.py` (regra de negócio, sem Qt), `Tela.qml`, `icone.svg`, `testes/`.
 - **Novo app** = nova pasta em `toolbox/apps/`. O hub descobre sozinho; `tipos_aceitos` (ex.: `["video/*"]`) define quando ele aparece.
   Apps que trabalham com link/texto usam `"precisa_arquivo": false` e aparecem sempre (selo LINK).

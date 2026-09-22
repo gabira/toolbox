@@ -139,36 +139,42 @@ Item {
         onRunningChanged: circulo.pontos = 0
     }
 
-    Icone {
-        id: cubo
-        readonly property real tamanho: circulo.lerp(circulo.d * 0.2, circulo.d * 0.54, circulo.k)
+    // Símbolo "T" do logo (vira o ícone do canto no modo compacto)
+    Image {
+        id: simbolo
+        readonly property real tamanho: circulo.lerp(circulo.d * 0.25, circulo.d * 0.68, circulo.k)
 
         SequentialAnimation on scale {
             running: circulo.analisando
             loops: Animation.Infinite
             alwaysRunToEnd: true
-            NumberAnimation { to: 1.14; duration: 420; easing.type: Easing.OutQuad }
+            NumberAnimation { to: 1.12; duration: 420; easing.type: Easing.OutQuad }
             NumberAnimation { to: 1; duration: 420; easing.type: Easing.InQuad }
         }
-        nome: "cubo"
-        resolucao: 160
+        source: Tema.imagem("logo_simbolo")
+        sourceSize: Qt.size(256, 256)
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        mipmap: true
         width: tamanho
         height: tamanho
         x: (circulo.d - tamanho) / 2
-        y: circulo.lerp(circulo.d * 0.15, (circulo.d - tamanho) / 2, circulo.k)
+        y: circulo.lerp(circulo.d * 0.1, (circulo.d - tamanho) / 2, circulo.k)
     }
 
-    Text {
+    // Palavra "TOOLBOX" do logo
+    Image {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: circulo.d * 0.39
-        text: "TOOLBOX"
-        color: Tema.texto
+        y: circulo.d * 0.385
+        width: circulo.d * 0.58
+        height: width * 229 / 799
+        source: Tema.imagem("logo_texto")
+        sourceSize: Qt.size(600, 172)
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        mipmap: true
         opacity: circulo.opacidadeConteudo
         visible: opacity > 0
-        font.family: Tema.fonte
-        font.pixelSize: Math.max(1, circulo.d * 0.11)
-        font.weight: Font.Black
-        font.letterSpacing: circulo.d * 0.004
     }
 
     // Entrada de arquivo compartilhada

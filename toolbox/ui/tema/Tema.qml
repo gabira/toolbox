@@ -35,4 +35,9 @@ QtObject {
     function icone(nome) {
         return Qt.resolvedUrl("../icones/" + nome + ".svg")
     }
+
+    // Logo: "logo_completo", "logo_simbolo" (só o T) e "logo_texto" (só a palavra)
+    function imagem(nome) {
+        return Qt.resolvedUrl("../imagens/" + nome + ".png")
+    }
 }

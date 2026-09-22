@@ -176,14 +176,37 @@ Item {
         function onArquivoAlterado() { hub.atualizarApps() }
     }
 
-    // Abertura: as bolhas saem do hub logo depois que a janela aparece.
-    Timer {
-        interval: 180
+    // --- abertura: o logo completo aparece e dá lugar ao hub, depois as bolhas saem ---
+    property real intro: 0              // 0 = só o logo, 1 = hub visível
+
+    function iniciar() {
+        modelo = nucleo.appsVisiveis
+        expandir(aoFicarOcioso)
+    }
+
+    SequentialAnimation {
+        id: animIntro
         running: true
-        onTriggered: {
-            hub.modelo = nucleo.appsVisiveis
-            hub.expandir(hub.aoFicarOcioso)
+        ParallelAnimation {
+            NumberAnimation { target: logoIntro; property: "opacity"; to: 1; duration: 380; easing.type: Easing.OutCubic }
+            NumberAnimation { target: logoIntro; property: "scale"; to: 1; duration: 500; easing.type: Easing.OutBack }
         }
+        PauseAnimation { duration: 220 }
+        ParallelAnimation {
+            NumberAnimation { target: logoIntro; property: "opacity"; to: 0; duration: 300 }
+            NumberAnimation { target: logoIntro; property: "scale"; to: 0.55; duration: 380; easing.type: Easing.InCubic }
+            NumberAnimation { target: hub; property: "intro"; to: 1; duration: 460; easing.type: Easing.OutBack }
+        }
+        ScriptAction { script: hub.iniciar() }
+    }
+
+    function pularIntro() {
+        if (!animIntro.running)
+            return
+        animIntro.stop()
+        logoIntro.opacity = 0
+        intro = 1
+        iniciar()
     }
 
     // --- fundo: brilho radial atrás do hub ---
@@ -300,6 +323,13 @@ Item {
         k: hub.k
         width: diametro
         height: diametro
+        opacity: Math.min(1, hub.intro * 1.5)
+        transform: Scale {
+            origin.x: hub.diametroHub / 2
+            origin.y: hub.diametroHub / 2
+            xScale: 0.55 + 0.45 * hub.intro
+            yScale: xScale
+        }
         x: hub.lerp(hub.centroX, centro, hub.k) - diametro / 2
         y: hub.lerp(hub.centroY, centro, hub.k) - diametro / 2
         destacado: soltura.containsDrag
@@ -321,6 +351,27 @@ Item {
                 soltado.acceptProposedAction()
             }
         }
+    }
+
+    Image {
+        id: logoIntro
+        anchors.centerIn: parent
+        width: hub.base * 0.46
+        height: width
+        source: Tema.imagem("logo_completo")
+        sourceSize: Qt.size(640, 640)
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        mipmap: true
+        opacity: 0
+        scale: 0.85
+        visible: opacity > 0
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        enabled: animIntro.running
+        onClicked: hub.pularIntro()
     }
 
     FileDialog {
