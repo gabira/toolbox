@@ -4,7 +4,6 @@
 para um contêiner compatível com o codec original, então não há perda nenhuma.
 """
 
-import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -12,6 +11,7 @@ from pathlib import Path
 
 from toolbox.nucleo.erros import Cancelado, ErroUsuario
 from toolbox.nucleo.ffmpeg import SEM_JANELA, FaixaAudio, caminho_ffmpeg, sondar
+from toolbox.nucleo.nomes import caminho_livre, limpar_nome
 
 
 @dataclass(frozen=True)
@@ -83,33 +83,6 @@ def formatar_duracao(segundos: float | None) -> str:
     horas, resto = divmod(total, 3600)
     minutos, seg = divmod(resto, 60)
     return f"{horas}:{minutos:02d}:{seg:02d}" if horas else f"{minutos}:{seg:02d}"
-
-
-_INVALIDOS_WINDOWS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
-_RESERVADOS_WINDOWS = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
-                       *(f"LPT{i}" for i in range(1, 10))}
-
-
-def limpar_nome(nome: str | None, extensao: str = "") -> str:
-    """Deixa o nome digitado válido como nome de arquivo do Windows ("" se não sobrar nada)."""
-    nome = _INVALIDOS_WINDOWS.sub("", nome or "").strip()
-    # Quem digita "musica.m4a" quer "musica", não "musica.m4a.m4a".
-    if extensao and nome.lower().endswith("." + extensao.lower()):
-        nome = nome[: -len(extensao) - 1]
-    nome = nome.rstrip(". ")[:180]
-    if nome.upper() in _RESERVADOS_WINDOWS:
-        nome += "_"
-    return nome
-
-
-def caminho_livre(pasta: Path, nome_base: str, extensao: str) -> Path:
-    """Nunca sobrescreve: "video.m4a", "video (2).m4a", "video (3).m4a"..."""
-    candidato = pasta / f"{nome_base}.{extensao}"
-    numero = 2
-    while candidato.exists():
-        candidato = pasta / f"{nome_base} ({numero}).{extensao}"
-        numero += 1
-    return candidato
 
 
 def montar_comando(entrada: Path, saida: Path, formato: Formato, faixa: int = 0) -> list[str]:
