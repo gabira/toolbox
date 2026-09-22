@@ -8,6 +8,7 @@ Diferença: usa o FFmpeg embarcado da TOOLBOX, sem precisar instalar nada.
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from yt_dlp import YoutubeDL
@@ -27,6 +28,7 @@ AUDIO = "audio"
 QUALIDADES_LOTE = [MELHOR, "1080", "720", "480", "360", AUDIO]
 
 INTERVALO_PROGRESSO = 0.15  # s — o yt-dlp chama o hook dezenas de vezes por segundo
+ANALISES_SIMULTANEAS = 4    # links da fila analisados ao mesmo tempo antes de baixar
 
 
 class _SemLog:
@@ -134,6 +136,32 @@ def analisar(url: str) -> dict:
         raise ErroUsuario(mensagem_amigavel(exc)) from exc
 
 
+def analisar_item(url: str, qualidade: str) -> dict:
+    """Análise rápida para a fila: título e tamanho estimado na qualidade escolhida (uma consulta só).
+
+    Retorna {"titulo", "e_playlist", "n_itens", "bytes"}; "bytes" é None quando não dá para saber
+    (playlists, transmissões ao vivo, formatos sem tamanho informado).
+    """
+    formato = montar_opcoes(qualidade, ".", False, None)["format"]
+    try:
+        with YoutubeDL({**BASE, "extract_flat": "in_playlist", "format": formato}) as ydl:
+            info = ydl.extract_info(url, download=False)
+    except Exception as exc:  # noqa: BLE001
+        raise ErroUsuario(mensagem_amigavel(exc)) from exc
+
+    if info.get("_type") == "playlist":
+        entradas = [e for e in (info.get("entries") or []) if e]
+        if not entradas:
+            raise ErroUsuario("Playlist vazia ou inacessível.")
+        return {"titulo": info.get("title") or "(sem título)", "e_playlist": True,
+                "n_itens": len(entradas), "bytes": None}
+
+    # Vídeo + áudio separados: o tamanho é a soma das duas faixas.
+    tamanhos = [f.get("filesize") or f.get("filesize_approx") for f in (info.get("requested_formats") or [info])]
+    return {"titulo": info.get("title") or "(sem título)", "e_playlist": False, "n_itens": 0,
+            "bytes": int(sum(tamanhos)) if tamanhos and all(tamanhos) else None}
+
+
 def montar_opcoes(qualidade: str, pasta, baixar_playlist: bool, hook) -> dict:
     if baixar_playlist:
         saida = os.path.join(pasta, "%(playlist_title)s", "%(playlist_index)02d - %(title)s.%(ext)s")
@@ -144,7 +172,7 @@ def montar_opcoes(qualidade: str, pasta, baixar_playlist: bool, hook) -> dict:
         **BASE,
         "outtmpl": saida,
         "noplaylist": not baixar_playlist,
-        "progress_hooks": [hook],
+        "progress_hooks": [hook] if hook else [],
         "noprogress": True,
         "ignoreerrors": baixar_playlist,  # um vídeo morto não derruba a playlist
         "retries": 3,
@@ -177,11 +205,15 @@ def montar_opcoes(qualidade: str, pasta, baixar_playlist: bool, hook) -> dict:
     return opcoes
 
 
-def descrever_progresso(d: dict) -> tuple[float | None, str]:
-    """(fração, texto) a partir de um dict de progresso do yt-dlp. Fração None = total desconhecido."""
+def descrever_progresso(d: dict, fracao: float | None = None) -> tuple[float | None, str]:
+    """(fração, texto) a partir de um dict de progresso do yt-dlp. Fração None = total desconhecido.
+
+    `fracao` substitui a da faixa atual (ex.: progresso do vídeo inteiro, somando vídeo e áudio).
+    """
     total = d.get("total_bytes") or d.get("total_bytes_estimate")
     baixado = d.get("downloaded_bytes") or 0
-    fracao = min(baixado / total, 1.0) if total else None
+    if fracao is None:
+        fracao = min(baixado / total, 1.0) if total else None
 
     partes = [f"{fracao * 100:.0f}%" if fracao is not None else tamanho_legivel(baixado)]
     if d.get("speed"):
@@ -208,13 +240,30 @@ def _arquivos_finais(info: dict | None) -> list[Path]:
 
 
 def baixar(url: str, qualidade: str, pasta, baixar_playlist: bool = False,
-           ao_progresso=None, cancelado=lambda: False) -> list[Path]:
-    """Baixa o vídeo (ou a playlist). `ao_progresso` recebe {"fracao", "texto"}. Retorna os arquivos."""
+           ao_progresso=None, cancelado=lambda: False, tamanho_estimado: int | None = None) -> list[Path]:
+    """Baixa o vídeo (ou a playlist). `ao_progresso` recebe {"fracao", "texto"}. Retorna os arquivos.
+
+    A fração é do vídeo inteiro: em alta resolução vídeo e áudio vêm em faixas separadas e a barra
+    não volta a zero na segunda. `tamanho_estimado` (de `analisar_item`) deixa a conta certa desde o início.
+    """
     if not Path(pasta).is_dir():
         raise ErroUsuario("A pasta de destino não existe mais. Escolha outra.")
 
     parciais = set()
     ultimo_envio = 0.0
+    faixas: dict[str, tuple[int, int]] = {}  # arquivo -> (baixado, total)
+
+    def fracao_do_video(d) -> float | None:
+        total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+        baixado = total if d.get("status") == "finished" else (d.get("downloaded_bytes") or 0)
+        info = d.get("info_dict") or {}
+        if baixar_playlist and info.get("playlist_index") and info.get("n_entries"):
+            # Playlist: cada vídeo é uma fatia igual da barra.
+            atual = baixado / total if total else 0
+            return min(1.0, (info["playlist_index"] - 1 + atual) / info["n_entries"])
+        faixas[d.get("filename") or d.get("tmpfilename") or ""] = (baixado, total)
+        denominador = max(tamanho_estimado or 0, sum(t for _, t in faixas.values()))
+        return min(1.0, sum(b for b, _ in faixas.values()) / denominador) if denominador else None
 
     def hook(d):
         nonlocal ultimo_envio
@@ -225,11 +274,15 @@ def baixar(url: str, qualidade: str, pasta, baixar_playlist: bool = False,
             raise Cancelado()
         if not ao_progresso:
             return
-        if d.get("status") == "finished":
-            ao_progresso({"fracao": 1.0, "texto": "Finalizando com o FFmpeg…"})
-        elif d.get("status") == "downloading" and time.monotonic() - ultimo_envio >= INTERVALO_PROGRESSO:
+        if d.get("status") not in ("finished", "downloading"):
+            return
+        fracao = fracao_do_video(d)
+        if d["status"] == "finished":
+            completo = fracao is None or fracao >= 0.98
+            ao_progresso({"fracao": fracao, "texto": "Finalizando com o FFmpeg…" if completo else "Faixa baixada…"})
+        elif time.monotonic() - ultimo_envio >= INTERVALO_PROGRESSO:
             ultimo_envio = time.monotonic()
-            fracao, texto = descrever_progresso(d)
+            fracao, texto = descrever_progresso(d, fracao)
             ao_progresso({"fracao": fracao, "texto": texto})
 
     def limpar_parciais():
@@ -259,50 +312,95 @@ def baixar(url: str, qualidade: str, pasta, baixar_playlist: bool = False,
     return arquivos
 
 
+def _analisar_todos(links, qualidade, ao_evento, cancelado) -> list:
+    """Analisa todos os links (alguns ao mesmo tempo). Cada posição: dict da análise, ErroUsuario ou None."""
+    resultados: list = [None] * len(links)
+
+    def analisar_um(i):
+        if cancelado():
+            return i, None
+        ao_evento({"tipo": "item", "i": i, "estado": "analisando…", "tom": "ativo"})
+        try:
+            return i, analisar_item(links[i], qualidade)
+        except ErroUsuario as exc:
+            return i, exc
+
+    with ThreadPoolExecutor(max_workers=ANALISES_SIMULTANEAS) as executor:
+        for futuro in as_completed([executor.submit(analisar_um, i) for i in range(len(links))]):
+            i, resultado = futuro.result()
+            resultados[i] = resultado
+            if isinstance(resultado, ErroUsuario):
+                ao_evento({"tipo": "item", "i": i, "estado": str(resultado), "tom": "erro"})
+            elif resultado:
+                titulo = resultado["titulo"]
+                if resultado["e_playlist"]:
+                    titulo += f"  (playlist, {resultado['n_itens']} vídeos)"
+                ao_evento({"tipo": "titulo", "i": i, "titulo": titulo})
+                tamanho = f" · {tamanho_legivel(resultado['bytes'])}" if resultado["bytes"] else ""
+                ao_evento({"tipo": "item", "i": i, "estado": "na fila" + tamanho, "tom": "normal"})
+    return resultados
+
+
+def pesos_da_fila(analises: list[dict]) -> list[float]:
+    """Peso de cada item no progresso total: o tamanho estimado.
+
+    Sem tamanho (playlist, ao vivo), vale a média dos vídeos conhecidos (vezes o nº de vídeos da playlist).
+    """
+    conhecidos = [a["bytes"] for a in analises if a["bytes"]]
+    media = sum(conhecidos) / len(conhecidos) if conhecidos else 1.0
+    return [float(a["bytes"] or media * max(1, a["n_itens"])) for a in analises]
+
+
 def processar_lote(links: list[str], qualidade: str, pasta, so_conferir: bool,
                    ao_evento, cancelado=lambda: False) -> dict:
-    """Analisa e baixa os links um após o outro; um link com erro não para a fila.
+    """Analisa todos os links e depois baixa um após o outro; um link com erro não para a fila.
+
+    Analisar antes permite mostrar o progresso total pelo tamanho real de cada vídeo
+    e apontar os links com problema logo no início.
 
     Eventos enviados a `ao_evento`:
       {"tipo": "item", "i", "estado", "tom"}   tom: normal | ativo | sucesso | erro
       {"tipo": "titulo", "i", "titulo"}
-      {"tipo": "progresso", "i", "fracao", "texto"}
+      {"tipo": "progresso", "i", "fracao", "texto"}   progresso do item
+      {"tipo": "total", "fracao"}                     progresso da fila inteira (por tamanho)
       {"tipo": "geral", "texto"}
     Retorna {"ok", "falhas", "so_conferir", "cancelado"}.
     """
-    ok = falhas = 0
-    interrompido = False
     total = len(links)
+    ao_evento({"tipo": "geral", "texto": f"Analisando {total} link{'s' if total > 1 else ''}…"})
+    analises = _analisar_todos(links, qualidade, ao_evento, cancelado)
+    falhas = sum(isinstance(a, ErroUsuario) for a in analises)
+    validos = [(i, a) for i, a in enumerate(analises) if isinstance(a, dict)]
 
-    for i, link in enumerate(links):
+    if cancelado():
+        return {"ok": 0, "falhas": falhas, "so_conferir": so_conferir, "cancelado": True}
+    if so_conferir:
+        for i, _analise in validos:
+            ao_evento({"tipo": "item", "i": i, "estado": "ok", "tom": "sucesso"})
+        return {"ok": len(validos), "falhas": falhas, "so_conferir": True, "cancelado": False}
+
+    pesos = pesos_da_fila([a for _, a in validos])
+    soma = sum(pesos) or 1.0
+    feito = 0.0
+    ok = 0
+    interrompido = False
+    ao_evento({"tipo": "total", "fracao": 0.0})
+
+    for n, ((i, analise), peso) in enumerate(zip(validos, pesos)):
         if cancelado():
             interrompido = True
             break
-
-        ao_evento({"tipo": "geral", "texto": f"{i + 1} de {total}: analisando…"})
-        ao_evento({"tipo": "item", "i": i, "estado": "analisando…", "tom": "ativo"})
-        try:
-            info = analisar(link)
-        except ErroUsuario as exc:
-            ao_evento({"tipo": "item", "i": i, "estado": str(exc), "tom": "erro"})
-            falhas += 1
-            continue
-
-        titulo = info["titulo"]
-        if info["e_playlist"]:
-            titulo += f"  (playlist, {info['n_itens']} vídeos)"
-        ao_evento({"tipo": "titulo", "i": i, "titulo": titulo})
-
-        if so_conferir:
-            ao_evento({"tipo": "item", "i": i, "estado": "ok", "tom": "sucesso"})
-            ok += 1
-            continue
-
-        ao_evento({"tipo": "geral", "texto": f"{i + 1} de {total}: {info['titulo']}"})
+        ao_evento({"tipo": "geral", "texto": f"{n + 1} de {len(validos)}: {analise['titulo']}"})
         ao_evento({"tipo": "item", "i": i, "estado": "baixando…", "tom": "ativo"})
+
+        def ao_progresso(p, i=i, peso=peso, feito=feito):
+            ao_evento({"tipo": "progresso", "i": i, **p})
+            if p.get("fracao") is not None:
+                ao_evento({"tipo": "total", "fracao": min(1.0, (feito + peso * p["fracao"]) / soma)})
+
         try:
-            baixar(link, qualidade, pasta, info["e_playlist"],
-                   lambda p, i=i: ao_evento({"tipo": "progresso", "i": i, **p}), cancelado)
+            baixar(links[i], qualidade, pasta, analise["e_playlist"], ao_progresso, cancelado,
+                   tamanho_estimado=analise["bytes"])
         except Cancelado:
             ao_evento({"tipo": "item", "i": i, "estado": "cancelado", "tom": "normal"})
             interrompido = True
@@ -310,8 +408,10 @@ def processar_lote(links: list[str], qualidade: str, pasta, so_conferir: bool,
         except ErroUsuario as exc:
             ao_evento({"tipo": "item", "i": i, "estado": str(exc), "tom": "erro"})
             falhas += 1
-            continue
-        ao_evento({"tipo": "item", "i": i, "estado": "concluído", "tom": "sucesso"})
-        ok += 1
+        else:
+            ao_evento({"tipo": "item", "i": i, "estado": "concluído", "tom": "sucesso"})
+            ok += 1
+        feito += peso  # com erro também: a parte dele não vai mais ser baixada
+        ao_evento({"tipo": "total", "fracao": min(1.0, feito / soma)})
 
-    return {"ok": ok, "falhas": falhas, "so_conferir": so_conferir, "cancelado": interrompido}
+    return {"ok": ok, "falhas": falhas, "so_conferir": False, "cancelado": interrompido}
