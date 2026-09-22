@@ -8,11 +8,11 @@ from toolbox.nucleo.erros import Cancelado
 class Tarefa(QThread):
     """Roda `funcao(ao_progresso, cancelado)` numa thread e emite o resultado.
 
-    - `ao_progresso(fracao)` recebe valores entre 0 e 1.
+    - `ao_progresso(valor)` envia uma fração entre 0 e 1 ou um evento (dict) para a UI.
     - `cancelado()` retorna True depois de `cancelar()` ser chamado.
     """
 
-    progresso = Signal(float)
+    progresso = Signal(object)
     concluida = Signal(object)
     falhou = Signal(str)
     cancelada = Signal()

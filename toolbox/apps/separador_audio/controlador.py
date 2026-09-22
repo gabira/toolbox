@@ -198,7 +198,7 @@ class Controlador(QObject):
         if self._tarefa_extracao:
             self._tarefa_extracao.cancelar()
 
-    @Slot(float)
+    @Slot(object)
     def _aoProgredir(self, fracao: float) -> None:
         self._progresso = fracao
         self.alterado.emit()

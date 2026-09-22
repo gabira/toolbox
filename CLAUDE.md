@@ -16,9 +16,12 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - `toolbox/ui/` — janela, hub (animações), componentes e tema.
 - `toolbox/apps/<id>/` — cada app é autocontido: `manifesto.json`, `controlador.py` (QObject exposto ao QML), `servico.py` (regra de negócio, sem Qt), `Tela.qml`, `icone.svg`, `testes/`.
 - **Novo app** = nova pasta em `toolbox/apps/`. O hub descobre sozinho; `tipos_aceitos` (ex.: `["video/*"]`) define quando ele aparece.
+  Apps que trabalham com link/texto usam `"precisa_arquivo": false` e aparecem sempre (selo LINK).
+- O tipo do arquivo é detectado pelo conteúdo (`nucleo.arquivo.detectar_tipo`), com a extensão como reserva.
 - Toda `Tela.qml` recebe `controlador` e `cor` (do manifesto); o arquivo compartilhado está em `nucleo.arquivo` (reagir a `nucleo.onArquivoAlterado`).
 - Trabalho demorado vai em `nucleo.tarefa.Tarefa` (thread); `servico.py` levanta `nucleo.erros.ErroUsuario`/`Cancelado`.
-- Modelo de referência: `toolbox/apps/separador_audio/`.
+- Modelos de referência: `toolbox/apps/separador_audio/` (arquivo) e `toolbox/apps/baixador_youtube/` (link, fila com `QAbstractListModel`).
+- Componentes de UI prontos em `toolbox/ui/componentes/` (Botao, CampoTexto, AreaTexto, SeletorAbas, CaixaMarcar, OpcaoSelecao, Cartao, BarraProgresso).
 
 ## Fluxo obrigatório de toda implementação
 1. `git switch dev && git switch -c feat/<assunto>`.

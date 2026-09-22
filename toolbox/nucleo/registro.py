@@ -19,6 +19,7 @@ class AppRegistrado:
     tipos_aceitos: list[str]
     ordem: int
     pasta: Path
+    precisa_arquivo: bool = True  # False = trabalha com link/texto; aparece sempre no hub
 
     @property
     def icone(self) -> Path:
@@ -41,6 +42,7 @@ def descobrir_apps(pasta_apps: Path = PASTA_APPS) -> list[AppRegistrado]:
             tipos_aceitos=dados.get("tipos_aceitos", ["*"]),
             ordem=dados.get("ordem", 100),
             pasta=manifesto.parent,
+            precisa_arquivo=dados.get("precisa_arquivo", True),
         ))
     return sorted(apps, key=lambda app: (app.ordem, app.nome))
 

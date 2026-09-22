@@ -270,7 +270,7 @@ Item {
                 return "Nenhum app instalado ainda."
             if (nucleo.arquivo === "")
                 return "Arraste um arquivo para a TOOLBOX ou clique no centro para escolher."
-            const n = nucleo.appsVisiveis.length
+            const n = nucleo.totalCompativeis
             if (n === 0)
                 return "Nenhum app disponível para este tipo de arquivo."
             return n === 1 ? "1 app disponível para este arquivo." : n + " apps disponíveis para este arquivo."

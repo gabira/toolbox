@@ -1,0 +1,7 @@
+{
+  "nome": "Baixar do YouTube",
+  "descricao": "Baixe vídeos, playlists ou uma lista de links do YouTube",
+  "cor": "#EF4444",
+  "precisa_arquivo": false,
+  "ordem": 2
+}

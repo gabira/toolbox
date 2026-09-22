@@ -19,3 +19,9 @@ def teste_descobre_apps_ordenados(tmp_path):
     assert apps[0].tipos_aceitos == ["*"]
     assert apps[1].tipos_aceitos == ["image/*"]
     assert apps[1].tela == tmp_path / "b_app" / "Tela.qml"
+    assert apps[0].precisa_arquivo
+
+
+def teste_app_de_link_nao_precisa_de_arquivo(tmp_path):
+    _criar_app(tmp_path, "link", nome="Link", precisa_arquivo=False)
+    assert descobrir_apps(tmp_path)[0].precisa_arquivo is False
