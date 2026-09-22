@@ -2,6 +2,13 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.3.0] - 2026-09-22
+### Adicionado
+- Separador de áudio: campo opcional de nome do arquivo de saída, já preenchido com o nome do vídeo,
+  com a extensão ao lado, botão "Nome original" e prévia "Será salvo como…".
+- Nomes inválidos no Windows são corrigidos automaticamente (caracteres proibidos, nomes reservados).
+- Componente `CampoTexto` reutilizável.
+
 ## [0.2.0] - 2026-09-22
 ### Adicionado
 - Animação "Analisando arquivo" ao carregar um arquivo: anel girando, arco de varredura, cubo pulsando

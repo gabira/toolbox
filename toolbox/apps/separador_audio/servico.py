@@ -4,6 +4,7 @@
 para um contêiner compatível com o codec original, então não há perda nenhuma.
 """
 
+import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -84,6 +85,23 @@ def formatar_duracao(segundos: float | None) -> str:
     return f"{horas}:{minutos:02d}:{seg:02d}" if horas else f"{minutos}:{seg:02d}"
 
 
+_INVALIDOS_WINDOWS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+_RESERVADOS_WINDOWS = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
+                       *(f"LPT{i}" for i in range(1, 10))}
+
+
+def limpar_nome(nome: str | None, extensao: str = "") -> str:
+    """Deixa o nome digitado válido como nome de arquivo do Windows ("" se não sobrar nada)."""
+    nome = _INVALIDOS_WINDOWS.sub("", nome or "").strip()
+    # Quem digita "musica.m4a" quer "musica", não "musica.m4a.m4a".
+    if extensao and nome.lower().endswith("." + extensao.lower()):
+        nome = nome[: -len(extensao) - 1]
+    nome = nome.rstrip(". ")[:180]
+    if nome.upper() in _RESERVADOS_WINDOWS:
+        nome += "_"
+    return nome
+
+
 def caminho_livre(pasta: Path, nome_base: str, extensao: str) -> Path:
     """Nunca sobrescreve: "video.m4a", "video (2).m4a", "video (3).m4a"..."""
     candidato = pasta / f"{nome_base}.{extensao}"
@@ -107,8 +125,11 @@ def montar_comando(entrada: Path, saida: Path, formato: Formato, faixa: int = 0)
 
 
 def extrair(entrada, pasta, id_formato: str = "original", ao_progresso=None,
-            cancelado=lambda: False, faixa: int = 0) -> Path:
-    """Extrai a faixa de áudio `faixa` de `entrada` para `pasta`. Retorna o arquivo criado."""
+            cancelado=lambda: False, faixa: int = 0, nome: str | None = None) -> Path:
+    """Extrai a faixa de áudio `faixa` de `entrada` para `pasta`. Retorna o arquivo criado.
+
+    `nome` (opcional) é o nome do arquivo de saída sem extensão; vazio = nome do vídeo.
+    """
     entrada, pasta = Path(entrada), Path(pasta)
     if not entrada.is_file():
         raise ErroUsuario("O vídeo não foi encontrado.")
@@ -120,7 +141,8 @@ def extrair(entrada, pasta, id_formato: str = "original", ao_progresso=None,
         raise ErroUsuario("Este vídeo não tem trilha de áudio.")
 
     formato = FORMATOS[id_formato]
-    saida = caminho_livre(pasta, entrada.stem, extensao_saida(formato, info.faixas_audio[faixa].codec))
+    extensao = extensao_saida(formato, info.faixas_audio[faixa].codec)
+    saida = caminho_livre(pasta, limpar_nome(nome, extensao) or entrada.stem, extensao)
     comando = montar_comando(entrada, saida, formato, faixa)
 
     with tempfile.TemporaryFile() as erros:

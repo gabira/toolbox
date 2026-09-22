@@ -189,10 +189,55 @@ Item {
                 }
             }
 
-            // --- Destino ---
+            // --- Saída: nome (opcional) e pasta ---
             Cartao {
-                titulo: "Salvar em"
+                titulo: "Saída"
                 width: parent.width
+
+                Rotulo {
+                    text: "Nome do arquivo (opcional)"
+                    color: Tema.textoSuave
+                    font.pixelSize: 13
+                }
+
+                Item {
+                    width: parent.width
+                    height: 44
+
+                    CampoTexto {
+                        anchors {
+                            left: parent.left
+                            right: botaoRestaurar.visible ? botaoRestaurar.left : parent.right
+                            rightMargin: botaoRestaurar.visible ? 10 : 0
+                            verticalCenter: parent.verticalCenter
+                        }
+                        texto: tela.controlador.nomeSaida
+                        dica: tela.controlador.nomePadrao !== "" ? tela.controlador.nomePadrao : "Nome do vídeo"
+                        sufixo: tela.controlador.extensaoSaida !== "" ? "." + tela.controlador.extensaoSaida : ""
+                        cor: tela.cor
+                        habilitado: !tela.extraindo && nucleo.arquivo !== ""
+                        onEditado: (texto) => tela.controlador.definirNome(texto)
+                        onConfirmado: if (tela.podeExtrair) tela.controlador.extrair(nucleo.arquivo)
+                    }
+
+                    Botao {
+                        id: botaoRestaurar
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: tela.controlador.nomeSaida !== tela.controlador.nomePadrao && tela.controlador.nomePadrao !== ""
+                        texto: "Nome original"
+                        cor: tela.cor
+                        habilitado: !tela.extraindo
+                        onClicado: tela.controlador.definirNome(tela.controlador.nomePadrao)
+                    }
+                }
+
+                Rotulo {
+                    text: "Salvar em"
+                    color: Tema.textoSuave
+                    font.pixelSize: 13
+                    topPadding: 4
+                }
 
                 Item {
                     width: parent.width
@@ -217,6 +262,18 @@ Item {
                         habilitado: !tela.extraindo
                         onClicado: dialogoPasta.open()
                     }
+                }
+
+                Rotulo {
+                    visible: tela.controlador.previsaoSaida !== ""
+                    width: parent.width
+                    elide: Text.ElideMiddle
+                    color: Tema.textoSuave
+                    font.pixelSize: 12
+                    textFormat: Text.StyledText
+                    text: "Será salvo como <b><font color='" + Tema.texto + "'>"
+                          + tela.controlador.previsaoSaida.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                          + "</font></b>"
                 }
             }
 
