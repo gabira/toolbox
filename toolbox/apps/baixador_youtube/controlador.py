@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -395,13 +396,19 @@ class Controlador(QObject):
         if tipo == "item":
             self._fila.atualizar(i, estado=evento["estado"], tom=evento["tom"],
                                  progresso=-1.0 if evento["tom"] != "sucesso" else 1.0)
+            if evento["estado"] == "baixando…":
+                self._texto_progresso = ""  # não herda o "Finalizando…" do vídeo anterior
+                self.alteradoProgresso.emit()
         elif tipo == "titulo":
             self._fila.atualizar(i, titulo=evento["titulo"])
-        elif tipo == "progresso":
+        elif tipo == "progresso":  # do vídeo atual: vai para a linha dele na fila
             if evento.get("fracao") is not None:
-                self._progresso = evento["fracao"]
                 self._fila.atualizar(i, progresso=evento["fracao"])
-            self._texto_progresso = evento.get("texto", "")
+            # O % do vídeo já aparece na linha dele; aqui fica velocidade e tempo restante.
+            self._texto_progresso = re.sub(r"^\d+% · ", "", evento.get("texto", ""))
+            self.alteradoProgresso.emit()
+        elif tipo == "total":      # da fila inteira: barra de cima
+            self._progresso = evento["fracao"]
             self.alteradoProgresso.emit()
         elif tipo == "geral":
             self._status_lote = evento["texto"]

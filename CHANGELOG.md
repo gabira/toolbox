@@ -2,6 +2,18 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.8.1] - 2026-09-22
+### Alterado
+- Baixar do YouTube, "Vários vídeos": a barra de cima mostra o progresso da fila inteira, pesado pelo tamanho
+  de cada vídeo; cada linha da fila mostra o próprio percentual.
+- A fila agora analisa todos os links antes de baixar (4 ao mesmo tempo): links com problema aparecem logo
+  no início e cada item mostra o tamanho estimado ("na fila · 11,3 MB").
+
+### Corrigido
+- Em alta resolução (vídeo e áudio em faixas separadas) o percentual voltava a zero no meio do download;
+  agora soma as duas faixas e só sobe.
+- O texto "Finalizando com o FFmpeg…" do vídeo anterior não fica mais aparecendo no início do próximo.
+
 ## [0.8.0] - 2026-09-22
 ### Adicionado
 - App **Gravador**: grava o microfone e o som do computador (ex.: você e os participantes de uma videochamada)

@@ -72,19 +72,20 @@ def teste_arquivos_finais_de_video_e_playlist():
 def youtube_falso(monkeypatch):
     baixados = []
 
-    def analisar(link):
+    def analisar_item(link, _qualidade):
         if "ruim" in link:
             raise ErroUsuario("Vídeo indisponível ou removido.")
-        return {"titulo": f"Título {link[-1]}", "e_playlist": False, "n_itens": 0}
+        tamanho = int(link.rsplit("/", 1)[-1]) * 100  # ".../3" = 300 bytes
+        return {"titulo": f"Título {link[-1]}", "e_playlist": False, "n_itens": 0, "bytes": tamanho}
 
-    def baixar(link, qualidade, pasta, playlist, ao_progresso, cancelado):
+    def baixar(link, qualidade, pasta, playlist, ao_progresso, cancelado, tamanho_estimado=None):
         if cancelado():
             raise Cancelado()
         ao_progresso({"fracao": 0.5, "texto": "50%"})
         baixados.append((link, qualidade))
         return [Path(pasta) / "video.mp4"]
 
-    monkeypatch.setattr(servico, "analisar", analisar)
+    monkeypatch.setattr(servico, "analisar_item", analisar_item)
     monkeypatch.setattr(servico, "baixar", baixar)
     return baixados
 
@@ -110,3 +111,51 @@ def teste_lote_parar(youtube_falso, tmp_path):
     resultado = servico.processar_lote(["https://x/1", "https://x/2"], "720", tmp_path, False,
                                        lambda _e: None, cancelado=lambda: True)
     assert resultado["cancelado"] and youtube_falso == []
+
+
+def teste_progresso_total_pesa_pelo_tamanho(youtube_falso, tmp_path):
+    eventos = []
+    servico.processar_lote(["https://x/1", "https://x/ruim", "https://x/3"], "720", tmp_path, False, eventos.append)
+
+    totais = [e["fracao"] for e in eventos if e["tipo"] == "total"]
+    # 100 + 300 bytes: metade do 1º = 50/400; ele pronto = 1/4; metade do 3º = 250/400; fim = 1.
+    assert totais == [0.0, 0.125, 0.25, 0.625, 1.0]
+    # O link com erro é apontado na análise, antes de qualquer download.
+    primeiro_erro = next(n for n, e in enumerate(eventos) if e.get("tom") == "erro")
+    primeiro_download = next(n for n, e in enumerate(eventos) if e["tipo"] == "progresso")
+    assert primeiro_erro < primeiro_download
+    assert {"tipo": "item", "i": 2, "estado": "na fila · 300 B", "tom": "normal"} in eventos
+
+
+def teste_pesos_sem_tamanho_usam_a_media():
+    analises = [{"bytes": 100, "n_itens": 0}, {"bytes": 300, "n_itens": 0},
+                {"bytes": None, "n_itens": 0}, {"bytes": None, "n_itens": 3}]  # ao vivo e playlist
+    assert servico.pesos_da_fila(analises) == [100, 300, 200, 600]
+
+
+def teste_video_e_audio_separados_nao_zeram_a_barra(tmp_path, monkeypatch):
+    fracoes = []
+
+    class YoutubeFalso:
+        def __init__(self, opcoes):
+            self.hook = opcoes["progress_hooks"][0]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def extract_info(self, url, download):
+            for arquivo, total in (("v.mp4", 300), ("a.m4a", 100)):  # faixa de vídeo, depois a de áudio
+                for baixado in (total // 2, total):
+                    self.hook({"status": "downloading", "filename": arquivo,
+                               "downloaded_bytes": baixado, "total_bytes": total})
+                self.hook({"status": "finished", "filename": arquivo, "total_bytes": total})
+            return {"requested_downloads": [{"filepath": str(tmp_path / "v.mp4")}]}
+
+    monkeypatch.setattr(servico, "YoutubeDL", YoutubeFalso)
+    monkeypatch.setattr(servico, "INTERVALO_PROGRESSO", 0)
+    servico.baixar("https://x/1", "720", tmp_path, ao_progresso=lambda p: fracoes.append(p["fracao"]),
+                   tamanho_estimado=400)
+    assert fracoes == sorted(fracoes) and fracoes[-1] == 1.0  # só sobe, até 100%
