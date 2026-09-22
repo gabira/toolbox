@@ -18,7 +18,8 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - `toolbox/apps/<id>/` — cada app é autocontido: `manifesto.json`, `controlador.py` (QObject exposto ao QML), `servico.py` (regra de negócio, sem interface), `Tela.qml`, `icone.svg`, `testes/`.
 - **Novo app** = nova pasta em `toolbox/apps/`. O hub descobre sozinho; `tipos_aceitos` (ex.: `["video/*"]`) define quando ele aparece.
   Apps de link usam `"precisa_arquivo": false` (selo LINK): aparecem com o centro vazio ou com um link
-  compatível, nunca com arquivo. Links do YouTube só valem com domínio e ID exatos (`nucleo/link.py`).
+  compatível, nunca com arquivo. Apps sem entrada (ex.: Gravador) usam `"precisa_arquivo": false` e
+  `"tipos_aceitos": []`: só aparecem com o centro vazio. Links do YouTube só valem com domínio e ID exatos (`nucleo/link.py`).
   Filtro opcional `apps/<id>/filtro.py` com `aceita(caminho, tipo) -> bool` (ex.: .docx só com Word/LibreOffice).
 - O tipo do arquivo é detectado pelo conteúdo (`nucleo.arquivo.detectar_tipo`), com a extensão como reserva.
 - Toda `Tela.qml` recebe `controlador` e `cor` (do manifesto). A entrada compartilhada é híbrida:
@@ -26,7 +27,8 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - Links têm tipo no formato dos arquivos (`nucleo/link.py`: `link/youtube`, `link/web`) — declare em `tipos_aceitos`.
 - Nome de saída: `nucleo/nomes.py` (`limpar_nome`, `caminho_livre` — nunca sobrescreve).
 - Trabalho demorado vai em `nucleo.tarefa.Tarefa` (thread); `servico.py` levanta `nucleo.erros.ErroUsuario`/`Cancelado`.
-- Modelos de referência: `toolbox/apps/separador_audio/` (arquivo) e `toolbox/apps/baixador_youtube/` (link, fila com `QAbstractListModel`).
+- Modelos de referência: `toolbox/apps/separador_audio/` (arquivo), `toolbox/apps/baixador_youtube/` (link, fila com `QAbstractListModel`)
+  e `toolbox/apps/gravador/` (sem entrada; captura de áudio com `PyAudioWPatch`, mixagem com FFmpeg).
 - Componentes de UI prontos em `toolbox/ui/componentes/` (Botao, CampoTexto, AreaTexto, SeletorAbas, CaixaMarcar, OpcaoSelecao, Cartao, BarraProgresso).
 
 ## Fluxo obrigatório de toda implementação

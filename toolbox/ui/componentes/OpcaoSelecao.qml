@@ -56,6 +56,7 @@ Rectangle {
             }
         }
         Text {
+            visible: opcao.subtitulo !== ""
             width: parent.width
             text: opcao.subtitulo
             color: Tema.textoSuave

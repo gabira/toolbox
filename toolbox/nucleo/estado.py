@@ -190,7 +190,7 @@ class Nucleo(QObject):
             "cor": app.cor,
             "icone": _url(app.icone),
             "tela": _url(app.tela),
-            "semArquivo": not app.precisa_arquivo,
+            "aceitaLink": any(tipo.startswith("link/") for tipo in app.tipos_aceitos),
         }
 
     def _aceita_entrada_atual(self, app: AppRegistrado) -> bool:

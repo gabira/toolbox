@@ -54,9 +54,9 @@ Item {
                 font.pixelSize: Math.max(1, bolha.width * 0.1)
                 font.weight: Font.Bold
             }
-            // Apps que trabalham com link aparecem com qualquer arquivo
+            // Selo dos apps que trabalham com link
             Rectangle {
-                visible: bolha.app.semArquivo === true
+                visible: bolha.app.aceitaLink === true
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: linhaLink.implicitWidth + bolha.width * 0.1
                 height: bolha.height * 0.13
