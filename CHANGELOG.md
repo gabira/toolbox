@@ -2,6 +2,16 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.9.0] - 2026-09-23
+### Adicionado
+- App **Transcrição**: transforma a fala de qualquer áudio ou vídeo em texto, 100% no computador e offline
+  (o áudio não sai da máquina). Só a 1ª vez baixa os modelos, que ficam em `%APPDATA%\TOOLBOX\modelos`.
+  - Motor Whisper local (faster-whisper, CPU int8): "Precisão" (large-v3-turbo, ~1,6 GB) ou
+    "Rapidez" (small, ~480 MB). Medido num i3 de 4 núcleos: 1 h de áudio em ~50 min / ~17 min.
+  - Separa quem fala em "Pessoa 1", "Pessoa 2"… reconhecendo as vozes (sherpa-onnx, ~35 MB), em qualquer áudio.
+  - Salva em .txt, .srt (legenda com horários) e .docx (Word, com horário e pessoa de cada trecho).
+  - Idioma português ou detecção automática; texto aparecendo ao vivo, tempo restante e cancelamento.
+
 ## [0.8.1] - 2026-09-22
 ### Alterado
 - Baixar do YouTube, "Vários vídeos": a barra de cima mostra o progresso da fila inteira, pesado pelo tamanho

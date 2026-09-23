@@ -29,6 +29,9 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - Trabalho demorado vai em `nucleo.tarefa.Tarefa` (thread); `servico.py` levanta `nucleo.erros.ErroUsuario`/`Cancelado`.
 - Modelos de referência: `toolbox/apps/separador_audio/` (arquivo), `toolbox/apps/baixador_youtube/` (link, fila com `QAbstractListModel`)
   e `toolbox/apps/gravador/` (sem entrada; captura de áudio com `PyAudioWPatch`, mixagem com FFmpeg).
+- `toolbox/apps/transcricao/`: Whisper local (faster-whisper) + vozes (sherpa-onnx). Modelos em
+  `%APPDATA%\TOOLBOX\modelos`, baixados só no 1º uso; depois tudo offline. Teste com modelo real só com
+  `TOOLBOX_TESTES_WHISPER=1`.
 - Componentes de UI prontos em `toolbox/ui/componentes/` (Botao, CampoTexto, AreaTexto, SeletorAbas, CaixaMarcar, OpcaoSelecao, Cartao, BarraProgresso).
 
 ## Fluxo obrigatório de toda implementação

@@ -1,0 +1,7 @@
+{
+  "nome": "Transcrição",
+  "descricao": "Transforma a fala de um áudio ou vídeo em texto, direto no seu computador",
+  "cor": "#14B8A6",
+  "tipos_aceitos": ["audio/*", "video/*"],
+  "ordem": 5
+}
