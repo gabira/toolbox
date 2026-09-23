@@ -2,6 +2,19 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.10.0] - 2026-09-23
+### Adicionado
+- App **Compactador**: diminui o tamanho de PDFs e imagens (JPG, PNG, WebP), offline. O original não é
+  alterado; a cópia "nome (compactado)" só é salva se ficar menor.
+  - Fila com vários arquivos misturados, tamanho antes → depois de cada um e o total economizado.
+  - 3 níveis: Leve (quase sem perda), Equilibrado (padrão) e Forte (o menor possível).
+  - PDF (PyMuPDF): só as imagens de dentro perdem resolução (150 dpi no Equilibrado, 100 no Forte);
+    texto continua nítido e pesquisável. Ex.: PDF escaneado de 17,3 MB → 6,6 MB (Equilibrado) / 2,7 MB (Forte).
+    Roda num processo à parte: "Parar" é imediato e um PDF defeituoso não derruba a TOOLBOX.
+    Avisa quando a cópia perde a assinatura digital.
+  - Imagens mantêm o formato; fotos são limitadas por megapixels (nunca viram uma tira fina), sem EXIF/GPS
+    e na rotação certa. PNG não é reduzido; no Forte fica com 256 cores (preserva a transparência).
+
 ## [0.9.0] - 2026-09-23
 ### Adicionado
 - App **Transcrição**: transforma a fala de qualquer áudio ou vídeo em texto, 100% no computador e offline
