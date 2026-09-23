@@ -32,6 +32,8 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 - `toolbox/apps/transcricao/`: Whisper local (faster-whisper) + vozes (sherpa-onnx). Modelos em
   `%APPDATA%\TOOLBOX\modelos`, baixados só no 1º uso; depois tudo offline. Teste com modelo real só com
   `TOOLBOX_TESTES_WHISPER=1`.
+- `toolbox/apps/compactador/`: PDF com PyMuPDF (`pdf.py` roda em processo à parte, para cancelar na hora)
+  e imagens com Pillow; a cópia "(compactado)" só é salva se ficar menor.
 - Componentes de UI prontos em `toolbox/ui/componentes/` (Botao, CampoTexto, AreaTexto, SeletorAbas, CaixaMarcar, OpcaoSelecao, Cartao, BarraProgresso).
 
 ## Fluxo obrigatório de toda implementação

@@ -1,0 +1,7 @@
+{
+  "nome": "Compactador",
+  "descricao": "Diminui o tamanho de PDFs e imagens, sem mexer no original",
+  "cor": "#0EA5E9",
+  "tipos_aceitos": ["application/pdf", "image/jpeg", "image/png", "image/webp"],
+  "ordem": 6
+}
