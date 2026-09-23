@@ -4,3 +4,5 @@ yt-dlp>=2025.1.1
 Pillow>=10
 img2pdf>=0.5
 PyAudioWPatch>=0.2.12
+faster-whisper>=1.1
+sherpa-onnx>=1.12
