@@ -42,6 +42,8 @@ Português (pt-BR) em tudo: código, comentários, nomes, mensagens de UI, commi
 3. Testar (ver regra de testes).
 4. Atualizar `VERSION` e `CHANGELOG.md` conforme a regra de versionamento.
 5. Merge em `dev` (`git merge --no-ff`) com commit resumindo a entrega.
+6. Excluir a branch `feat/<assunto>`, local e remota (`git branch -d` e `git push origin --delete`).
+   O histórico continua preservado dentro do merge; só `main` e `dev` ficam no repositório.
 
 ## Versionamento
 - `VERSION` é a fonte única (lida por `toolbox/__init__.py` e exibida na UI).

@@ -2,6 +2,11 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [0.10.1] - 2026-09-23
+### Alterado
+- Fluxo de git: ao terminar o merge de uma `feat/<assunto>` em `dev`, a branch deve ser excluída
+  (local e remota). O histórico continua preservado dentro do commit de merge.
+
 ## [0.10.0] - 2026-09-23
 ### Adicionado
 - App **Compactador**: diminui o tamanho de PDFs e imagens (JPG, PNG, WebP), offline. O original não é
